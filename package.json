@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
+    "@hookform/resolvers": "^5.2.2",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.24",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
@@ -22,8 +24,10 @@
     "pg-hstore": "^2.3.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-hook-form": "^7.66.0",
     "react-hot-toast": "^2.6.0",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

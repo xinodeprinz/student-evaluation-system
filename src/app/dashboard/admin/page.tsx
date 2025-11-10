@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Navbar from "@/components/Navbar";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import Modal from "@/components/Modal";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import FormInput from "@/components/FormInput";
 import {
   Users,
   GraduationCap,
@@ -14,8 +19,20 @@ import {
   Trash2,
   FileText,
   TrendingUp,
+  Search,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { motion } from "framer-motion";
+import {
+  studentSchema,
+  teacherSchema,
+  classSchema,
+  subjectSchema,
+  StudentFormData,
+  TeacherFormData,
+  ClassFormData,
+  SubjectFormData,
+} from "@/lib/validations/schemas";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -28,46 +45,38 @@ export default function AdminDashboard() {
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("");
+  const [modalType, setModalType] = useState<
+    "student" | "teacher" | "class" | "subject" | ""
+  >("");
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    item: any;
+    type: string;
+  }>({
+    isOpen: false,
+    item: null,
+    type: "",
+  });
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Form states
-  const [studentForm, setStudentForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    phoneNumber: "",
-    matricule: "",
-    classId: "",
-    dateOfBirth: "",
-    placeOfBirth: "",
-    gender: "Male",
-    parentName: "",
-    parentPhone: "",
-    address: "",
+  // Form hooks
+  const studentForm = useForm<StudentFormData>({
+    resolver: zodResolver(studentSchema),
   });
 
-  const [teacherForm, setTeacherForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    phoneNumber: "",
+  const teacherForm = useForm<TeacherFormData>({
+    resolver: zodResolver(teacherSchema),
   });
 
-  const [classForm, setClassForm] = useState({
-    name: "",
-    level: "",
-    academicYear: "2025/2026",
-    teacherId: "",
+  const classForm = useForm<ClassFormData>({
+    resolver: zodResolver(classSchema),
+    defaultValues: { academicYear: "2024/2025" },
   });
 
-  const [subjectForm, setSubjectForm] = useState({
-    name: "",
-    code: "",
-    coefficient: 1,
-    classId: "",
-    teacherId: "",
+  const subjectForm = useForm<SubjectFormData>({
+    resolver: zodResolver(subjectSchema),
+    defaultValues: { coefficient: 1 },
   });
 
   useEffect(() => {
@@ -110,11 +119,14 @@ export default function AdminDashboard() {
           }),
         ]);
 
-      const statsData = await statsRes.json();
-      const studentsData = await studentsRes.json();
-      const teachersData = await teachersRes.json();
-      const classesData = await classesRes.json();
-      const subjectsData = await subjectsRes.json();
+      const [statsData, studentsData, teachersData, classesData, subjectsData] =
+        await Promise.all([
+          statsRes.json(),
+          studentsRes.json(),
+          teachersRes.json(),
+          classesRes.json(),
+          subjectsRes.json(),
+        ]);
 
       setStats(statsData.stats);
       setStudents(studentsData.students);
@@ -129,108 +141,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch("/api/students", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(studentForm),
-      });
-
-      if (!response.ok) throw new Error("Failed to create student");
-
-      toast.success("Student created successfully!");
-      setShowModal(false);
-      fetchDashboardData(token!);
-      resetForms();
-    } catch (error) {
-      toast.error("Failed to create student");
-    }
-  };
-
-  const handleCreateTeacher = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch("/api/teachers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(teacherForm),
-      });
-
-      if (!response.ok) throw new Error("Failed to create teacher");
-
-      toast.success("Teacher created successfully!");
-      setShowModal(false);
-      fetchDashboardData(token!);
-      resetForms();
-    } catch (error) {
-      toast.error("Failed to create teacher");
-    }
-  };
-
-  const handleCreateClass = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch("/api/classes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(classForm),
-      });
-
-      if (!response.ok) throw new Error("Failed to create class");
-
-      toast.success("Class created successfully!");
-      setShowModal(false);
-      fetchDashboardData(token!);
-      resetForms();
-    } catch (error) {
-      toast.error("Failed to create class");
-    }
-  };
-
-  const handleCreateSubject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    try {
-      const response = await fetch("/api/subjects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(subjectForm),
-      });
-
-      if (!response.ok) throw new Error("Failed to create subject");
-
-      toast.success("Subject created successfully!");
-      setShowModal(false);
-      fetchDashboardData(token!);
-      resetForms();
-    } catch (error) {
-      toast.error("Failed to create subject");
-    }
-  };
-
-  const resetForms = () => {
-    setStudentForm({
+  const openCreateModal = (
+    type: "student" | "teacher" | "class" | "subject"
+  ) => {
+    setEditingItem(null);
+    setModalType(type);
+    setShowModal(true);
+    // Reset all forms
+    studentForm.reset({
       firstName: "",
       lastName: "",
       email: "",
@@ -245,32 +163,286 @@ export default function AdminDashboard() {
       parentPhone: "",
       address: "",
     });
-    setTeacherForm({
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      phoneNumber: "",
-    });
-    setClassForm({
-      name: "",
-      level: "",
-      academicYear: "2025/2026",
-      teacherId: "",
-    });
-    setSubjectForm({
-      name: "",
-      code: "",
-      coefficient: 1,
-      classId: "",
-      teacherId: "",
-    });
+    teacherForm.reset();
+    classForm.reset({ academicYear: "2024/2025" });
+    subjectForm.reset({ coefficient: 1 });
   };
 
-  const openModal = (type: string) => {
+  const openEditModal = (
+    item: any,
+    type: "student" | "teacher" | "class" | "subject"
+  ) => {
+    setEditingItem(item);
     setModalType(type);
     setShowModal(true);
+
+    if (type === "student") {
+      studentForm.reset({
+        firstName: item.user.firstName,
+        lastName: item.user.lastName,
+        email: item.user.email,
+        password: "",
+        phoneNumber: item.user.phoneNumber || "",
+        matricule: item.matricule,
+        classId: item.classId.toString(),
+        dateOfBirth: new Date(item.dateOfBirth).toISOString().split("T")[0],
+        placeOfBirth: item.placeOfBirth,
+        gender: item.gender,
+        parentName: item.parentName || "",
+        parentPhone: item.parentPhone || "",
+        address: item.address || "",
+      });
+    } else if (type === "teacher") {
+      teacherForm.reset({
+        firstName: item.firstName,
+        lastName: item.lastName,
+        email: item.email,
+        password: "",
+        phoneNumber: item.phoneNumber || "",
+      });
+    } else if (type === "class") {
+      classForm.reset({
+        name: item.name,
+        level: item.level,
+        academicYear: item.academicYear,
+        teacherId: item.teacherId?.toString() || "",
+      });
+    } else if (type === "subject") {
+      subjectForm.reset({
+        name: item.name,
+        code: item.code,
+        coefficient: item.coefficient,
+        classId: item.classId.toString(),
+        teacherId: item.teacherId?.toString() || "",
+      });
+    }
   };
+
+  const handleCreateStudent = async (data: StudentFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("/api/students", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to create student");
+
+      toast.success("Student created successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to create student");
+    }
+  };
+
+  const handleUpdateStudent = async (data: StudentFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/students/${editingItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to update student");
+
+      toast.success("Student updated successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to update student");
+    }
+  };
+
+  const handleCreateTeacher = async (data: TeacherFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("/api/teachers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to create teacher");
+
+      toast.success("Teacher created successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to create teacher");
+    }
+  };
+
+  const handleUpdateTeacher = async (data: TeacherFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/teachers/${editingItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to update teacher");
+
+      toast.success("Teacher updated successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to update teacher");
+    }
+  };
+
+  const handleCreateClass = async (data: ClassFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("/api/classes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to create class");
+
+      toast.success("Class created successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to create class");
+    }
+  };
+
+  const handleUpdateClass = async (data: ClassFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/classes/${editingItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to update class");
+
+      toast.success("Class updated successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to update class");
+    }
+  };
+
+  const handleCreateSubject = async (data: SubjectFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("/api/subjects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to create subject");
+
+      toast.success("Subject created successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to create subject");
+    }
+  };
+
+  const handleUpdateSubject = async (data: SubjectFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/subjects/${editingItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to update subject");
+
+      toast.success("Subject updated successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to update subject");
+    }
+  };
+
+  const handleDelete = async () => {
+    const token = localStorage.getItem("token");
+    const { item, type } = deleteDialog;
+
+    try {
+      const endpoints: any = {
+        student: `/api/students/${item.id}`,
+        teacher: `/api/teachers/${item.id}`,
+        class: `/api/classes/${item.id}`,
+        subject: `/api/subjects/${item.id}`,
+      };
+
+      const response = await fetch(endpoints[type], {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error(`Failed to delete ${type}`);
+
+      toast.success(
+        `${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully!`
+      );
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error(`Failed to delete ${type}`);
+    }
+  };
+
+  const filteredStudents = students.filter((student) =>
+    `${student.user.firstName} ${student.user.lastName} ${student.matricule}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+  const filteredTeachers = teachers.filter((teacher) =>
+    `${teacher.firstName} ${teacher.lastName} ${teacher.email}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+  const filteredClasses = classes.filter((cls) =>
+    cls.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredSubjects = subjects.filter((subject) =>
+    `${subject.name} ${subject.code}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
 
   if (loading || !user) {
     return <LoadingSpinner />;
@@ -281,84 +453,104 @@ export default function AdminDashboard() {
       <Toaster position="top-right" />
       <Navbar user={user} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-600">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-l-4 border-green-600 hover:shadow-xl transition-shadow"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">
+                <p className="text-gray-600 text-xs sm:text-sm font-semibold">
                   Total Students
                 </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                   {stats?.totalStudents || 0}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-green-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-l-4 border-yellow-500 hover:shadow-xl transition-shadow"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">
+                <p className="text-gray-600 text-xs sm:text-sm font-semibold">
                   Total Teachers
                 </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                   {stats?.totalTeachers || 0}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-yellow-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-l-4 border-red-500 hover:shadow-xl transition-shadow"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">
+                <p className="text-gray-600 text-xs sm:text-sm font-semibold">
                   Total Classes
                 </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                   {stats?.totalClasses || 0}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <School className="w-6 h-6 text-red-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <School className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">
+                <p className="text-gray-600 text-xs sm:text-sm font-semibold">
                   Total Subjects
                 </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                   {stats?.totalSubjects || 0}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-blue-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="border-b border-gray-200">
-            <div className="flex overflow-x-auto">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <div className="flex">
               {["overview", "students", "teachers", "classes", "subjects"].map(
                 (tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-4 font-semibold text-sm whitespace-nowrap transition-colors ${
+                    className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
                       activeTab === tab
                         ? "border-b-4 border-green-600 text-green-600 bg-green-50"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -371,155 +563,258 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Overview Tab */}
             {activeTab === "overview" && (
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
                   Dashboard Overview
                 </h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
-                    <TrendingUp className="w-8 h-8 mb-4" />
-                    <h4 className="text-xl font-bold mb-2">
+                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-white shadow-xl hover:shadow-2xl transition-shadow">
+                    <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 mb-4" />
+                    <h4 className="text-lg sm:text-xl font-bold mb-2">
                       Academic Performance
                     </h4>
-                    <p className="text-green-100">
+                    <p className="text-green-100 text-sm sm:text-base">
                       Monitor student progress and generate comprehensive
-                      reports for the academic year 2025/2026.
+                      reports for the academic year 2024/2025.
                     </p>
+                    <button
+                      onClick={() => setActiveTab("students")}
+                      className="mt-4 bg-white text-green-600 px-4 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors text-sm"
+                    >
+                      View Students
+                    </button>
                   </div>
-                  <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
-                    <FileText className="w-8 h-8 mb-4" />
-                    <h4 className="text-xl font-bold mb-2">Quick Actions</h4>
+                  <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-white shadow-xl hover:shadow-2xl transition-shadow">
+                    <FileText className="w-8 h-8 sm:w-10 sm:h-10 mb-4" />
+                    <h4 className="text-lg sm:text-xl font-bold mb-2">
+                      Quick Actions
+                    </h4>
                     <div className="space-y-2 mt-4">
                       <button
-                        onClick={() => openModal("student")}
-                        className="w-full bg-white text-yellow-600 py-2 rounded-lg font-semibold hover:bg-yellow-50 transition-colors"
+                        onClick={() => openCreateModal("student")}
+                        className="w-full bg-white text-yellow-600 py-2 rounded-lg font-semibold hover:bg-yellow-50 transition-colors text-sm"
                       >
                         Add New Student
                       </button>
                       <button
-                        onClick={() => openModal("teacher")}
-                        className="w-full bg-white text-yellow-600 py-2 rounded-lg font-semibold hover:bg-yellow-50 transition-colors"
+                        onClick={() => openCreateModal("teacher")}
+                        className="w-full bg-white text-yellow-600 py-2 rounded-lg font-semibold hover:bg-yellow-50 transition-colors text-sm"
                       >
                         Add New Teacher
+                      </button>
+                      <button
+                        onClick={() => openCreateModal("class")}
+                        className="w-full bg-white text-yellow-600 py-2 rounded-lg font-semibold hover:bg-yellow-50 transition-colors text-sm"
+                      >
+                        Add New Class
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Students Tab */}
             {activeTab === "students" && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Students Management
                   </h3>
-                  <button
-                    onClick={() => openModal("student")}
-                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Student
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search students..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => openCreateModal("student")}
+                      className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Student</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b-2 border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Matricule
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Class
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Phone
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {students.map((student) => (
-                        <tr key={student.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {student.matricule}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {student.user.firstName} {student.user.lastName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {student.class.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {student.user.email}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {student.user.phoneNumber || "N/A"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button className="text-blue-600 hover:text-blue-800 mr-3">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button className="text-red-600 hover:text-red-800">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <div className="overflow-hidden shadow-lg rounded-xl border border-gray-200">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gradient-to-r from-green-50 to-yellow-50">
+                          <tr>
+                            <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Matricule
+                            </th>
+                            <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Name
+                            </th>
+                            <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Class
+                            </th>
+                            <th className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredStudents.map((student, index) => (
+                            <motion.tr
+                              key={student.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="hover:bg-green-50 transition-colors"
+                            >
+                              <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {student.matricule}
+                              </td>
+                              <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                    <span className="text-green-600 font-bold text-sm">
+                                      {student.user.firstName[0]}
+                                      {student.user.lastName[0]}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {student.user.firstName}{" "}
+                                      {student.user.lastName}
+                                    </div>
+                                    <div className="text-xs text-gray-500 md:hidden">
+                                      {student.class.name}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
+                                  {student.class.name}
+                                </span>
+                              </td>
+                              <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {student.user.email}
+                              </td>
+                              <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() =>
+                                      openEditModal(student, "student")
+                                    }
+                                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setDeleteDialog({
+                                        isOpen: true,
+                                        item: student,
+                                        type: "student",
+                                      })
+                                    }
+                                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {filteredStudents.length === 0 && (
+                  <div className="text-center py-12">
+                    <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg">No students found</p>
+                  </div>
+                )}
+              </motion.div>
             )}
 
             {/* Teachers Tab */}
             {activeTab === "teachers" && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Teachers Management
                   </h3>
-                  <button
-                    onClick={() => openModal("teacher")}
-                    className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Teacher
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search teachers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => openCreateModal("teacher")}
+                      className="flex items-center justify-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-xl hover:bg-yellow-600 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Teacher</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {teachers.map((teacher) => (
-                    <div
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {filteredTeachers.map((teacher, index) => (
+                    <motion.div
                       key={teacher.id}
-                      className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl transition-all hover:border-yellow-300"
                     >
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                          <Users className="w-6 h-6 text-yellow-600" />
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
+                          <span className="text-white font-bold text-lg">
+                            {teacher.firstName[0]}
+                            {teacher.lastName[0]}
+                          </span>
                         </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 truncate">
                             {teacher.firstName} {teacher.lastName}
                           </h4>
                           <p className="text-sm text-gray-600">Teacher</p>
                         </div>
                       </div>
-                      <div className="space-y-2 text-sm">
-                        <p className="text-gray-600">
+                      <div className="space-y-2 text-sm mb-4">
+                        <p className="text-gray-600 truncate">
                           <span className="font-semibold">Email:</span>{" "}
                           {teacher.email}
                         </p>
@@ -528,48 +823,86 @@ export default function AdminDashboard() {
                           {teacher.phoneNumber || "N/A"}
                         </p>
                       </div>
-                      <div className="flex gap-2 mt-4">
-                        <button className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditModal(teacher, "teacher")}
+                          className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold"
+                        >
                           Edit
                         </button>
-                        <button className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold">
+                        <button
+                          onClick={() =>
+                            setDeleteDialog({
+                              isOpen: true,
+                              item: teacher,
+                              type: "teacher",
+                            })
+                          }
+                          className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold"
+                        >
                           Delete
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+
+                {filteredTeachers.length === 0 && (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg">No teachers found</p>
+                  </div>
+                )}
+              </motion.div>
             )}
 
             {/* Classes Tab */}
             {activeTab === "classes" && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Classes Management
                   </h3>
-                  <button
-                    onClick={() => openModal("class")}
-                    className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Class
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search classes..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => openCreateModal("class")}
+                      className="flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Class</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {classes.map((classItem) => (
-                    <div
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {filteredClasses.map((classItem, index) => (
+                    <motion.div
                       key={classItem.id}
-                      className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl transition-all hover:border-red-300"
                     >
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                          <School className="w-6 h-6 text-red-600" />
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                          <School className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                         </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-lg">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 text-lg truncate">
                             {classItem.name}
                           </h4>
                           <p className="text-sm text-gray-600">
@@ -577,717 +910,571 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-2 text-sm mb-4">
                         <p className="text-gray-600">
                           <span className="font-semibold">Academic Year:</span>{" "}
                           {classItem.academicYear}
                         </p>
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 truncate">
                           <span className="font-semibold">Class Teacher:</span>{" "}
                           {classItem.teacher
                             ? `${classItem.teacher.firstName} ${classItem.teacher.lastName}`
                             : "Not Assigned"}
                         </p>
                       </div>
-                      <div className="flex gap-2 mt-4">
-                        <button className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditModal(classItem, "class")}
+                          className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold"
+                        >
                           Edit
                         </button>
-                        <button className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold">
+                        <button
+                          onClick={() =>
+                            setDeleteDialog({
+                              isOpen: true,
+                              item: classItem,
+                              type: "class",
+                            })
+                          }
+                          className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold"
+                        >
                           Delete
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
+
+                {filteredClasses.length === 0 && (
+                  <div className="text-center py-12">
+                    <School className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg">No classes found</p>
+                  </div>
+                )}
+              </motion.div>
             )}
 
             {/* Subjects Tab */}
             {activeTab === "subjects" && (
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
                     Subjects Management
                   </h3>
-                  <button
-                    onClick={() => openModal("subject")}
-                    className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Subject
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search subjects..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => openCreateModal("subject")}
+                      className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Subject</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b-2 border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Code
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Subject
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Class
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Coefficient
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Teacher
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {subjects.map((subject) => (
-                        <tr key={subject.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {subject.code}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {subject.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {subject.class.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {subject.coefficient}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {subject.teacher
-                              ? `${subject.teacher.firstName} ${subject.teacher.lastName}`
-                              : "Not Assigned"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button className="text-blue-600 hover:text-blue-800 mr-3">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button className="text-red-600 hover:text-red-800">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <div className="overflow-hidden shadow-lg rounded-xl border border-gray-200">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gradient-to-r from-blue-50 to-purple-50">
+                          <tr>
+                            <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Code
+                            </th>
+                            <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Subject
+                            </th>
+                            <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Class
+                            </th>
+                            <th className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Coefficient
+                            </th>
+                            <th className="hidden xl:table-cell px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Teacher
+                            </th>
+                            <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredSubjects.map((subject, index) => (
+                            <motion.tr
+                              key={subject.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="hover:bg-blue-50 transition-colors"
+                            >
+                              <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
+                                  {subject.code}
+                                </span>
+                              </td>
+                              <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {subject.name}
+                                </div>
+                                <div className="text-xs text-gray-500 md:hidden">
+                                  {subject.class.name} • Coef:{" "}
+                                  {subject.coefficient}
+                                </div>
+                              </td>
+                              <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
+                                  {subject.class.name}
+                                </span>
+                              </td>
+                              <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                {subject.coefficient}
+                              </td>
+                              <td className="hidden xl:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {subject.teacher
+                                  ? `${subject.teacher.firstName} ${subject.teacher.lastName}`
+                                  : "Not Assigned"}
+                              </td>
+                              <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() =>
+                                      openEditModal(subject, "subject")
+                                    }
+                                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setDeleteDialog({
+                                        isOpen: true,
+                                        item: subject,
+                                        type: "subject",
+                                      })
+                                    }
+                                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {filteredSubjects.length === 0 && (
+                  <div className="text-center py-12">
+                    <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg">No subjects found</p>
+                  </div>
+                )}
+              </motion.div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-green-600 to-yellow-500 p-6 text-white">
-              <h3 className="text-2xl font-bold">
-                Add New {modalType.charAt(0).toUpperCase() + modalType.slice(1)}
-              </h3>
+      {/* Modals */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={`${editingItem ? "Edit" : "Add New"} ${
+          modalType.charAt(0).toUpperCase() + modalType.slice(1)
+        }`}
+        size="lg"
+      >
+        {modalType === "student" && (
+          <form
+            onSubmit={studentForm.handleSubmit(
+              editingItem ? handleUpdateStudent : handleCreateStudent
+            )}
+            className="space-y-4"
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="First Name"
+                name="firstName"
+                register={studentForm.register}
+                error={studentForm.formState.errors.firstName}
+                required
+              />
+              <FormInput
+                label="Last Name"
+                name="lastName"
+                register={studentForm.register}
+                error={studentForm.formState.errors.lastName}
+                required
+              />
             </div>
 
-            <div className="p-6">
-              {modalType === "student" && (
-                <form onSubmit={handleCreateStudent} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.firstName}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.lastName}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={studentForm.email}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            email: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Password
-                      </label>
-                      <input
-                        type="password"
-                        value={studentForm.password}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            password: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Matricule
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.matricule}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            matricule: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.phoneNumber}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            phoneNumber: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Date of Birth
-                      </label>
-                      <input
-                        type="date"
-                        value={studentForm.dateOfBirth}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            dateOfBirth: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Place of Birth
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.placeOfBirth}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            placeOfBirth: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Gender
-                      </label>
-                      <select
-                        value={studentForm.gender}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            gender: e.target.value as "Male" | "Female",
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Class
-                      </label>
-                      <select
-                        value={studentForm.classId}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            classId: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      >
-                        <option value="">Select Class</option>
-                        {classes.map((cls) => (
-                          <option key={cls.id} value={cls.id}>
-                            {cls.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Parent Name
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.parentName}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            parentName: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Parent Phone
-                      </label>
-                      <input
-                        type="text"
-                        value={studentForm.parentPhone}
-                        onChange={(e) =>
-                          setStudentForm({
-                            ...studentForm,
-                            parentPhone: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Address
-                    </label>
-                    <textarea
-                      value={studentForm.address}
-                      onChange={(e) =>
-                        setStudentForm({
-                          ...studentForm,
-                          address: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                    >
-                      Create Student
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {modalType === "teacher" && (
-                <form onSubmit={handleCreateTeacher} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={teacherForm.firstName}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={teacherForm.lastName}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={teacherForm.email}
-                      onChange={(e) =>
-                        setTeacherForm({
-                          ...teacherForm,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      value={teacherForm.password}
-                      onChange={(e) =>
-                        setTeacherForm({
-                          ...teacherForm,
-                          password: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="text"
-                      value={teacherForm.phoneNumber}
-                      onChange={(e) =>
-                        setTeacherForm({
-                          ...teacherForm,
-                          phoneNumber: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
-                    >
-                      Create Teacher
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {modalType === "class" && (
-                <form onSubmit={handleCreateClass} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Class Name
-                    </label>
-                    <input
-                      type="text"
-                      value={classForm.name}
-                      onChange={(e) =>
-                        setClassForm({ ...classForm, name: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      placeholder="e.g., Form 5A"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Level
-                    </label>
-                    <input
-                      type="text"
-                      value={classForm.level}
-                      onChange={(e) =>
-                        setClassForm({ ...classForm, level: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      placeholder="e.g., Upper Sixth"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Academic Year
-                    </label>
-                    <input
-                      type="text"
-                      value={classForm.academicYear}
-                      onChange={(e) =>
-                        setClassForm({
-                          ...classForm,
-                          academicYear: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Class Teacher
-                    </label>
-                    <select
-                      value={classForm.teacherId}
-                      onChange={(e) =>
-                        setClassForm({
-                          ...classForm,
-                          teacherId: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                    >
-                      <option value="">Select Teacher (Optional)</option>
-                      {teachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.id}>
-                          {teacher.firstName} {teacher.lastName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors"
-                    >
-                      Create Class
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {modalType === "subject" && (
-                <form onSubmit={handleCreateSubject} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Subject Name
-                      </label>
-                      <input
-                        type="text"
-                        value={subjectForm.name}
-                        onChange={(e) =>
-                          setSubjectForm({
-                            ...subjectForm,
-                            name: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        placeholder="e.g., Mathematics"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Subject Code
-                      </label>
-                      <input
-                        type="text"
-                        value={subjectForm.code}
-                        onChange={(e) =>
-                          setSubjectForm({
-                            ...subjectForm,
-                            code: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                        placeholder="e.g., MATH"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Coefficient
-                    </label>
-                    <input
-                      type="number"
-                      value={subjectForm.coefficient}
-                      onChange={(e) =>
-                        setSubjectForm({
-                          ...subjectForm,
-                          coefficient: parseFloat(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      min="1"
-                      step="0.5"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Class
-                    </label>
-                    <select
-                      value={subjectForm.classId}
-                      onChange={(e) =>
-                        setSubjectForm({
-                          ...subjectForm,
-                          classId: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                      required
-                    >
-                      <option value="">Select Class</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Teacher
-                    </label>
-                    <select
-                      value={subjectForm.teacherId}
-                      onChange={(e) =>
-                        setSubjectForm({
-                          ...subjectForm,
-                          teacherId: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
-                    >
-                      <option value="">Select Teacher (Optional)</option>
-                      {teachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.id}>
-                          {teacher.firstName} {teacher.lastName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-                    >
-                      Create Subject
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Email"
+                name="email"
+                type="email"
+                register={studentForm.register}
+                error={studentForm.formState.errors.email}
+                required
+              />
+              <FormInput
+                label="Password"
+                name="password"
+                type="password"
+                register={studentForm.register}
+                error={studentForm.formState.errors.password}
+                required={!editingItem}
+                placeholder={editingItem ? "Leave blank to keep current" : ""}
+              />
             </div>
-          </div>
-        </div>
-      )}
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Matricule"
+                name="matricule"
+                register={studentForm.register}
+                error={studentForm.formState.errors.matricule}
+                required
+              />
+              <FormInput
+                label="Phone Number"
+                name="phoneNumber"
+                register={studentForm.register}
+                error={studentForm.formState.errors.phoneNumber}
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Date of Birth"
+                name="dateOfBirth"
+                type="date"
+                register={studentForm.register}
+                error={studentForm.formState.errors.dateOfBirth}
+                required
+              />
+              <FormInput
+                label="Place of Birth"
+                name="placeOfBirth"
+                register={studentForm.register}
+                error={studentForm.formState.errors.placeOfBirth}
+                required
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Gender"
+                name="gender"
+                type="select"
+                register={studentForm.register}
+                error={studentForm.formState.errors.gender}
+                options={[
+                  { value: "Male", label: "Male" },
+                  { value: "Female", label: "Female" },
+                ]}
+                required
+              />
+              <FormInput
+                label="Class"
+                name="classId"
+                type="select"
+                register={studentForm.register}
+                error={studentForm.formState.errors.classId}
+                options={classes.map((cls) => ({
+                  value: cls.id.toString(),
+                  label: cls.name,
+                }))}
+                required
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Parent Name"
+                name="parentName"
+                register={studentForm.register}
+                error={studentForm.formState.errors.parentName}
+              />
+              <FormInput
+                label="Parent Phone"
+                name="parentPhone"
+                register={studentForm.register}
+                error={studentForm.formState.errors.parentPhone}
+              />
+            </div>
+
+            <FormInput
+              label="Address"
+              name="address"
+              type="textarea"
+              register={studentForm.register}
+              error={studentForm.formState.errors.address}
+              rows={3}
+            />
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-lg"
+              >
+                {editingItem ? "Update Student" : "Create Student"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {modalType === "teacher" && (
+          <form
+            onSubmit={teacherForm.handleSubmit(
+              editingItem ? handleUpdateTeacher : handleCreateTeacher
+            )}
+            className="space-y-4"
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="First Name"
+                name="firstName"
+                register={teacherForm.register}
+                error={teacherForm.formState.errors.firstName}
+                required
+              />
+              <FormInput
+                label="Last Name"
+                name="lastName"
+                register={teacherForm.register}
+                error={teacherForm.formState.errors.lastName}
+                required
+              />
+            </div>
+
+            <FormInput
+              label="Email"
+              name="email"
+              type="email"
+              register={teacherForm.register}
+              error={teacherForm.formState.errors.email}
+              required
+            />
+
+            <FormInput
+              label="Password"
+              name="password"
+              type="password"
+              register={teacherForm.register}
+              error={teacherForm.formState.errors.password}
+              required={!editingItem}
+              placeholder={editingItem ? "Leave blank to keep current" : ""}
+            />
+
+            <FormInput
+              label="Phone Number"
+              name="phoneNumber"
+              register={teacherForm.register}
+              error={teacherForm.formState.errors.phoneNumber}
+            />
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-yellow-500 text-white py-3 rounded-xl font-semibold hover:bg-yellow-600 transition-colors shadow-lg"
+              >
+                {editingItem ? "Update Teacher" : "Create Teacher"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {modalType === "class" && (
+          <form
+            onSubmit={classForm.handleSubmit(
+              editingItem ? handleUpdateClass : handleCreateClass
+            )}
+            className="space-y-4"
+          >
+            <FormInput
+              label="Class Name"
+              name="name"
+              register={classForm.register}
+              error={classForm.formState.errors.name}
+              placeholder="e.g., Form 5A"
+              required
+            />
+
+            <FormInput
+              label="Level"
+              name="level"
+              register={classForm.register}
+              error={classForm.formState.errors.level}
+              placeholder="e.g., Upper Sixth"
+              required
+            />
+
+            <FormInput
+              label="Academic Year"
+              name="academicYear"
+              register={classForm.register}
+              error={classForm.formState.errors.academicYear}
+              placeholder="e.g., 2024/2025"
+              required
+            />
+
+            <FormInput
+              label="Class Teacher"
+              name="teacherId"
+              type="select"
+              register={classForm.register}
+              error={classForm.formState.errors.teacherId}
+              options={teachers.map((teacher) => ({
+                value: teacher.id.toString(),
+                label: `${teacher.firstName} ${teacher.lastName}`,
+              }))}
+            />
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors shadow-lg"
+              >
+                {editingItem ? "Update Class" : "Create Class"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {modalType === "subject" && (
+          <form
+            onSubmit={subjectForm.handleSubmit(
+              editingItem ? handleUpdateSubject : handleCreateSubject
+            )}
+            className="space-y-4"
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Subject Name"
+                name="name"
+                register={subjectForm.register}
+                error={subjectForm.formState.errors.name}
+                placeholder="e.g., Mathematics"
+                required
+              />
+              <FormInput
+                label="Subject Code"
+                name="code"
+                register={subjectForm.register}
+                error={subjectForm.formState.errors.code}
+                placeholder="e.g., MATH"
+                required
+              />
+            </div>
+
+            <FormInput
+              label="Coefficient"
+              name="coefficient"
+              type="number"
+              register={subjectForm.register}
+              error={subjectForm.formState.errors.coefficient}
+              min="0.5"
+              max="10"
+              step="0.5"
+              required
+            />
+
+            <FormInput
+              label="Class"
+              name="classId"
+              type="select"
+              register={subjectForm.register}
+              error={subjectForm.formState.errors.classId}
+              options={classes.map((cls) => ({
+                value: cls.id.toString(),
+                label: cls.name,
+              }))}
+              required
+            />
+
+            <FormInput
+              label="Teacher"
+              name="teacherId"
+              type="select"
+              register={subjectForm.register}
+              error={subjectForm.formState.errors.teacherId}
+              options={teachers.map((teacher) => ({
+                value: teacher.id.toString(),
+                label: `${teacher.firstName} ${teacher.lastName}`,
+              }))}
+            />
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition-colors shadow-lg"
+              >
+                {editingItem ? "Update Subject" : "Create Subject"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, item: null, type: "" })}
+        onConfirm={handleDelete}
+        title={`Delete ${deleteDialog.type}?`}
+        message={`Are you sure you want to delete this ${deleteDialog.type}? This action cannot be undone.`}
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 }

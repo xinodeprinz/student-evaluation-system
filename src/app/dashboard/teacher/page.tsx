@@ -4,13 +4,21 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { BookOpen, GraduationCap, TrendingUp, FileText } from "lucide-react";
+import {
+  BookOpen,
+  GraduationCap,
+  FileText,
+  Save,
+  TrendingUp,
+} from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { motion } from "framer-motion";
 
 export default function TeacherDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [students, setStudents] = useState<any[]>([]);
@@ -74,10 +82,11 @@ export default function TeacherDashboard() {
       const data = await response.json();
       setStudents(data.students);
 
-      // Fetch existing grades
       const gradesRes = await fetch(
         `/api/grades?term=${term}&sequence=${sequence}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       const gradesData = await gradesRes.json();
 
@@ -126,6 +135,7 @@ export default function TeacherDashboard() {
       return;
     }
 
+    setSaving(true);
     try {
       for (const student of selectedStudents) {
         const key = `${student.id}-${selectedSubject}`;
@@ -155,6 +165,8 @@ export default function TeacherDashboard() {
     } catch (error) {
       console.error("Error submitting grades:", error);
       toast.error("Failed to submit grades");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -171,38 +183,50 @@ export default function TeacherDashboard() {
       <Toaster position="top-right" />
       <Navbar user={user} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Welcome Card */}
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 mb-6 sm:mb-8 text-white"
+        >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-              <BookOpen className="w-8 h-8 text-yellow-600" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-2xl sm:text-3xl font-bold">
                 Welcome, {user.firstName} {user.lastName}
               </h1>
-              <p className="text-yellow-100 mt-1">
+              <p className="text-yellow-100 mt-1 text-sm sm:text-base">
                 Teacher Dashboard - Grade Management
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8"
+        >
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
             Select Class and Subject
           </h3>
-          <div className="grid md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Class
               </label>
               <select
                 value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
+                onChange={(e) => {
+                  setSelectedClass(e.target.value);
+                  setSelectedSubject("");
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white"
               >
                 <option value="">Select Class</option>
                 {classes.map((cls) => (
@@ -220,7 +244,7 @@ export default function TeacherDashboard() {
               <select
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white disabled:bg-gray-100"
                 disabled={!selectedClass}
               >
                 <option value="">Select Subject</option>
@@ -239,7 +263,7 @@ export default function TeacherDashboard() {
               <select
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white"
               >
                 <option value="1">Term 1</option>
                 <option value="2">Term 2</option>
@@ -254,7 +278,7 @@ export default function TeacherDashboard() {
               <select
                 value={sequence}
                 onChange={(e) => setSequence(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white"
               >
                 <option value="1">Sequence 1</option>
                 <option value="2">Sequence 2</option>
@@ -264,56 +288,92 @@ export default function TeacherDashboard() {
             <div className="flex items-end">
               <button
                 onClick={handleSubmitGrades}
-                disabled={!selectedClass || !selectedSubject}
-                className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!selectedClass || !selectedSubject || saving}
+                className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
-                Submit Grades
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Submit Grades</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Grade Entry Table */}
         {selectedClass && selectedSubject && students.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600 to-yellow-500 p-6 text-white">
-              <h3 className="text-2xl font-bold">Grade Entry</h3>
-              <p className="text-green-100 mt-1">
-                Term {term} - Sequence {sequence}
-              </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"
+          >
+            <div className="bg-gradient-to-r from-green-600 to-yellow-500 p-4 sm:p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold">Grade Entry</h3>
+                  <p className="text-green-100 mt-1 text-sm sm:text-base">
+                    Term {term} - Sequence {sequence}
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10" />
+              </div>
             </div>
 
-            <div className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b-2 border-gray-200">
+            <div className="p-4 sm:p-6">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="min-w-full">
+                  <thead className="bg-gradient-to-r from-green-50 to-yellow-50 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
                         Matricule
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
                         Student Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
                         Score (out of 20)
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                      <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase">
                         Comment
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {students.map((student) => {
+                    {students.map((student, index) => {
                       const key = `${student.id}-${selectedSubject}`;
                       return (
-                        <tr key={student.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <motion.tr
+                          key={student.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="hover:bg-green-50 transition-colors"
+                        >
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {student.matricule}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {student.user.firstName} {student.user.lastName}
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                <span className="text-green-600 font-bold text-xs sm:text-sm">
+                                  {student.user.firstName[0]}
+                                  {student.user.lastName[0]}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-900">
+                                {student.user.firstName} {student.user.lastName}
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 sm:px-6 py-4">
                             <input
                               type="number"
                               min="0"
@@ -327,11 +387,11 @@ export default function TeacherDashboard() {
                                   e.target.value
                                 )
                               }
-                              className="w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
+                              className="w-20 sm:w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none transition-colors"
                               placeholder="0-20"
                             />
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                             <input
                               type="text"
                               value={grades[key]?.comment || ""}
@@ -342,36 +402,75 @@ export default function TeacherDashboard() {
                                   e.target.value
                                 )
                               }
-                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none"
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none transition-colors"
                               placeholder="Enter comment..."
                             />
                           </td>
-                        </tr>
+                        </motion.tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile Comments Section */}
+              <div className="md:hidden mt-6 space-y-4">
+                <h4 className="font-bold text-gray-900 mb-3">Comments</h4>
+                {students.map((student) => {
+                  const key = `${student.id}-${selectedSubject}`;
+                  return (
+                    <div key={student.id} className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-semibold text-gray-900 mb-2">
+                        {student.user.firstName} {student.user.lastName}
+                      </p>
+                      <input
+                        type="text"
+                        value={grades[key]?.comment || ""}
+                        onChange={(e) =>
+                          handleGradeChange(
+                            student.id,
+                            "comment",
+                            e.target.value
+                          )
+                        }
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none transition-colors"
+                        placeholder="Enter comment..."
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {selectedClass && students.length === 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-12 text-center"
+          >
             <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 text-lg">
               No students found in this class
             </p>
-          </div>
+          </motion.div>
         )}
 
         {!selectedClass && (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-12 text-center"
+          >
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 text-lg">
               Select a class and subject to start grading
             </p>
-          </div>
+            <p className="text-gray-500 text-sm mt-2">
+              Choose from the dropdowns above to view students
+            </p>
+          </motion.div>
         )}
       </div>
     </div>
