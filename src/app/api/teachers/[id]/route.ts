@@ -5,7 +5,7 @@ import sequelize from "@/lib/db/config";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await sequelize.authenticate();
@@ -16,7 +16,8 @@ export async function PUT(
     }
 
     const data = await request.json();
-    const teacher = await User.findByPk(params.id);
+    const { id } = await params;
+    const teacher = await User.findByPk(id);
 
     if (!teacher || teacher.role !== "teacher") {
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
@@ -41,7 +42,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await sequelize.authenticate();
@@ -51,7 +52,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const teacher = await User.findByPk(params.id);
+    const { id } = await params;
+    const teacher = await User.findByPk(id);
 
     if (!teacher || teacher.role !== "teacher") {
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });

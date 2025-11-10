@@ -5,7 +5,7 @@ import sequelize from "@/lib/db/config";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await sequelize.authenticate();
@@ -16,7 +16,8 @@ export async function PUT(
     }
 
     const data = await request.json();
-    const subject = await Subject.findByPk(params.id);
+    const { id } = await params;
+    const subject = await Subject.findByPk(id);
 
     if (!subject) {
       return NextResponse.json({ error: "Subject not found" }, { status: 404 });
@@ -42,7 +43,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await sequelize.authenticate();
@@ -52,7 +53,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const subject = await Subject.findByPk(params.id);
+    const { id } = await params;
+    const subject = await Subject.findByPk(id);
 
     if (!subject) {
       return NextResponse.json({ error: "Subject not found" }, { status: 404 });
