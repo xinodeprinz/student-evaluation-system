@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts"
+    "seed": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -36,6 +36,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "sequelize-cli": "^6.6.3",
