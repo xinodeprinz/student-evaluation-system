@@ -6,7 +6,7 @@
     "dev": "next dev",
     "start": "next start",
     "lint": "eslint",
-    "seed": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
+    "seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
     "build": "npm run seed && next build"
   },
   "dependencies": {
