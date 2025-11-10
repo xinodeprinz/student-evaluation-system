@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts"
+    "seed": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
+    "build": "npm run seed && next build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
