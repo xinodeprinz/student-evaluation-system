@@ -50,7 +50,6 @@ Subject.init(
     code: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true,
     },
     coefficient: {
       type: DataTypes.INTEGER.UNSIGNED,
