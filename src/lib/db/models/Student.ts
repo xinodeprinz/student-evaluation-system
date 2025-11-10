@@ -1,14 +1,16 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
 
-interface StudentAttributes {
+export type Gender = "Male" | "Female";
+
+export interface StudentAttributes {
   id: number;
   userId: number;
   matricule: string;
   classId: number;
   dateOfBirth: Date;
   placeOfBirth: string;
-  gender: "Male" | "Female";
+  gender: Gender;
   parentName?: string;
   parentPhone?: string;
   address?: string;
@@ -16,35 +18,43 @@ interface StudentAttributes {
   updatedAt?: Date;
 }
 
-interface StudentCreationAttributes extends Optional<StudentAttributes, "id"> {}
+export type StudentCreationAttributes = Optional<
+  StudentAttributes,
+  "id" | "parentName" | "parentPhone" | "address" | "createdAt" | "updatedAt"
+>;
 
 class Student
   extends Model<StudentAttributes, StudentCreationAttributes>
   implements StudentAttributes
 {
-  public id!: number;
-  public userId!: number;
-  public matricule!: string;
-  public classId!: number;
-  public dateOfBirth!: Date;
-  public placeOfBirth!: string;
-  public gender!: "Male" | "Female";
-  public parentName?: string;
-  public parentPhone?: string;
-  public address?: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: number;
+  declare userId: number;
+  declare matricule: string;
+  declare classId: number;
+  declare dateOfBirth: Date;
+  declare placeOfBirth: string;
+  declare gender: Gender;
+  declare parentName?: string;
+  declare parentPhone?: string;
+  declare address?: string;
+  declare readonly createdAt?: Date;
+  declare readonly updatedAt?: Date;
+
+  // associations
+  declare user?: any;
+  declare class?: any;
+  declare grades?: any[];
 }
 
 Student.init(
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
     userId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       references: {
         model: "users",
@@ -52,12 +62,12 @@ Student.init(
       },
     },
     matricule: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
       unique: true,
     },
     classId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       references: {
         model: "classes",
@@ -65,11 +75,11 @@ Student.init(
       },
     },
     dateOfBirth: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: false,
     },
     placeOfBirth: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(191),
       allowNull: false,
     },
     gender: {
@@ -77,21 +87,30 @@ Student.init(
       allowNull: false,
     },
     parentName: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(191),
       allowNull: true,
     },
     parentPhone: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     address: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     tableName: "students",
+    modelName: "Student",
     timestamps: true,
   }
 );

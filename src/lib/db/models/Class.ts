@@ -1,62 +1,79 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
 
-interface ClassAttributes {
+export interface ClassAttributes {
   id: number;
   name: string;
   level: string;
   academicYear: string;
-  teacherId?: number;
+  teacherId?: number; // FK to users.id (teacher)
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface ClassCreationAttributes extends Optional<ClassAttributes, "id"> {}
+export type ClassCreationAttributes = Optional<
+  ClassAttributes,
+  "id" | "teacherId" | "createdAt" | "updatedAt"
+>;
 
 class Class
   extends Model<ClassAttributes, ClassCreationAttributes>
   implements ClassAttributes
 {
-  public id!: number;
-  public name!: string;
-  public level!: string;
-  public academicYear!: string;
-  public teacherId?: number;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: number;
+  declare name: string;
+  declare level: string;
+  declare academicYear: string;
+  declare teacherId?: number;
+  declare readonly createdAt?: Date;
+  declare readonly updatedAt?: Date;
+
+  // associations
+  declare students?: any[];
+  declare subjects?: any[];
+  declare teacher?: any;
 }
 
 Class.init(
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
     name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
     },
     level: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
     academicYear: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(20),
       allowNull: false,
     },
     teacherId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
       references: {
         model: "users",
         key: "id",
       },
     },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     tableName: "classes",
+    modelName: "Class",
     timestamps: true,
   }
 );

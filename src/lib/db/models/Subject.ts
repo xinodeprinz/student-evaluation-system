@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
 
-interface SubjectAttributes {
+export interface SubjectAttributes {
   id: number;
   name: string;
   code: string;
@@ -12,44 +12,53 @@ interface SubjectAttributes {
   updatedAt?: Date;
 }
 
-interface SubjectCreationAttributes extends Optional<SubjectAttributes, "id"> {}
+export type SubjectCreationAttributes = Optional<
+  SubjectAttributes,
+  "id" | "teacherId" | "createdAt" | "updatedAt"
+>;
 
 class Subject
   extends Model<SubjectAttributes, SubjectCreationAttributes>
   implements SubjectAttributes
 {
-  public id!: number;
-  public name!: string;
-  public code!: string;
-  public coefficient!: number;
-  public classId!: number;
-  public teacherId?: number;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: number;
+  declare name: string;
+  declare code: string;
+  declare coefficient: number;
+  declare classId: number;
+  declare teacherId?: number;
+  declare readonly createdAt?: Date;
+  declare readonly updatedAt?: Date;
+
+  // associations
+  declare class?: any;
+  declare teacher?: any;
+  declare grades?: any[];
 }
 
 Subject.init(
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
     name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(191),
       allowNull: false,
     },
     code: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: false,
+      unique: true,
     },
     coefficient: {
-      type: DataTypes.FLOAT,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       defaultValue: 1,
     },
     classId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       references: {
         model: "classes",
@@ -57,17 +66,26 @@ Subject.init(
       },
     },
     teacherId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
       references: {
         model: "users",
         key: "id",
       },
     },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     tableName: "subjects",
+    modelName: "Subject",
     timestamps: true,
   }
 );

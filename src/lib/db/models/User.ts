@@ -2,48 +2,59 @@ import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
 import bcrypt from "bcryptjs";
 
-interface UserAttributes {
+export type UserRole = "admin" | "teacher" | "student";
+
+export interface UserAttributes {
   id: number;
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  role: "admin" | "teacher" | "student";
+  role: UserRole;
   phoneNumber?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, "id"> {}
+export type UserCreationAttributes = Optional<
+  UserAttributes,
+  "id" | "phoneNumber" | "createdAt" | "updatedAt"
+>;
 
 class User
   extends Model<UserAttributes, UserCreationAttributes>
   implements UserAttributes
 {
-  public id!: number;
-  public email!: string;
-  public password!: string;
-  public firstName!: string;
-  public lastName!: string;
-  public role!: "admin" | "teacher" | "student";
-  public phoneNumber?: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: number;
+  declare email: string;
+  declare password: string;
+  declare firstName: string;
+  declare lastName: string;
+  declare role: UserRole;
+  declare phoneNumber?: string;
+  declare readonly createdAt?: Date;
+  declare readonly updatedAt?: Date;
 
-  public async comparePassword(password: string): Promise<boolean> {
-    return bcrypt.compare(password, this.password);
+  // association placeholders (filled via models/index.ts)
+  declare studentProfile?: any;
+  declare classesAsTeacher?: any[];
+  declare subjectsAsTeacher?: any[];
+
+  async comparePassword(plain: string): Promise<boolean> {
+    // this.password is now the real column value (no shadowing).
+    return bcrypt.compare(plain, this.password);
   }
 }
 
 User.init(
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
     email: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(191),
       allowNull: false,
       unique: true,
       validate: {
@@ -51,42 +62,53 @@ User.init(
       },
     },
     password: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false,
     },
     firstName: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
     },
     lastName: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
     },
     role: {
       type: DataTypes.ENUM("admin", "teacher", "student"),
       allowNull: false,
-      defaultValue: "student",
     },
     phoneNumber: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
   },
   {
     sequelize,
     tableName: "users",
+    modelName: "User",
     timestamps: true,
     hooks: {
-      beforeCreate: async (user: User) => {
+      async beforeCreate(user) {
         if (user.password) {
           user.password = await bcrypt.hash(user.password, 10);
         }
       },
-      beforeUpdate: async (user: User) => {
+      async beforeUpdate(user) {
         if (user.changed("password")) {
           user.password = await bcrypt.hash(user.password, 10);
         }
       },
+    },
+    defaultScope: {
+      attributes: { exclude: [] }, // keep password for auth queries; filter when returning to client
     },
   }
 );

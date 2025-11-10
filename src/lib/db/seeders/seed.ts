@@ -70,14 +70,14 @@ async function seed() {
     const form5A = await Class.create({
       name: "Form 5A",
       level: "Upper Sixth",
-      academicYear: "2024/2025",
+      academicYear: "2025/2026",
       teacherId: teacher1.id,
     });
 
     const form4B = await Class.create({
       name: "Form 4B",
       level: "Lower Sixth",
-      academicYear: "2024/2025",
+      academicYear: "2025/2026",
       teacherId: teacher2.id,
     });
 

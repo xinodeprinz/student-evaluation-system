@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
 
-interface GradeAttributes {
+export interface GradeAttributes {
   id: number;
   studentId: number;
   subjectId: number;
@@ -14,33 +14,40 @@ interface GradeAttributes {
   updatedAt?: Date;
 }
 
-interface GradeCreationAttributes extends Optional<GradeAttributes, "id"> {}
+export type GradeCreationAttributes = Optional<
+  GradeAttributes,
+  "id" | "comment" | "createdAt" | "updatedAt"
+>;
 
 class Grade
   extends Model<GradeAttributes, GradeCreationAttributes>
   implements GradeAttributes
 {
-  public id!: number;
-  public studentId!: number;
-  public subjectId!: number;
-  public term!: number;
-  public sequence!: number;
-  public score!: number;
-  public maxScore!: number;
-  public comment?: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: number;
+  declare studentId: number;
+  declare subjectId: number;
+  declare term: number;
+  declare sequence: number;
+  declare score: number;
+  declare maxScore: number;
+  declare comment?: string;
+  declare readonly createdAt?: Date;
+  declare readonly updatedAt?: Date;
+
+  // associations
+  declare student?: any;
+  declare subject?: any;
 }
 
 Grade.init(
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
     studentId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       references: {
         model: "students",
@@ -48,7 +55,7 @@ Grade.init(
       },
     },
     subjectId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       references: {
         model: "subjects",
@@ -56,20 +63,12 @@ Grade.init(
       },
     },
     term: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      validate: {
-        min: 1,
-        max: 3,
-      },
     },
     sequence: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      validate: {
-        min: 1,
-        max: 2,
-      },
     },
     score: {
       type: DataTypes.FLOAT,
@@ -84,10 +83,19 @@ Grade.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     tableName: "grades",
+    modelName: "Grade",
     timestamps: true,
   }
 );
