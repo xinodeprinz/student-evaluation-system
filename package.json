@@ -29,9 +29,7 @@
     "react-hook-form": "^7.66.0",
     "react-hot-toast": "^2.6.0",
     "sequelize": "^6.37.7",
-    "zod": "^4.1.12",
-    "express": "^4.21.2",
-    "helmet": "^8.1.0"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
