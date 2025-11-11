@@ -3,8 +3,6 @@ import { User, Student } from "@/lib/db/models";
 import { signToken } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
-export const runtime = "nodejs";
-
 export async function POST(request: NextRequest) {
   try {
     await sequelize.authenticate();

@@ -5,10 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "start": "next start",
+    "build": "next build",
     "lint": "eslint",
-    "seed:dev": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
-    "seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
-    "build": "npm run seed && next build"
+    "seed": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
+    "seed:deploy": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
+    "deploy": "npm run seed && next build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
