@@ -9,7 +9,7 @@
     "lint": "eslint",
     "seed": "dotenv -e .env -- ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
     "seed:deploy": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} src/lib/db/seeders/seed.ts",
-    "deploy": "npm run seed && next build"
+    "deploy": "npm run seed:deploy && next build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
