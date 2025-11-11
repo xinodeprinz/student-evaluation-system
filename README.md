@@ -1,44 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Student Evaluation System — Next.js (App Router)
 
-## Getting Started
+A modern **Next.js App Router** application powered by **Sequelize** for managing student evaluations.
 
-First, run the development server:
+---
+
+## 🚀 Tech Stack
+
+- **Next.js (App Router)**
+- **React** + **TypeScript**
+- **Sequelize ORM**
+- **MySQL-compatible Database**
+- **JWT** authentication
+
+---
+
+## ✅ Prerequisites
+
+- **Node.js** ≥ 18.x
+- **npm** ≥ 9.x
+- A running **SQL database** accessible via the credentials below.
+
+---
+
+## ⚙️ Setup Instructions
+
+1. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+2. **Create environment file**
+   Create a `.env` file in the root directory with the following keys:
+
+   ```dotenv
+   # Database Credentials
+   DB_NAME=
+   DB_USER=
+   DB_PASSWORD=
+   DB_HOST=
+   DB_PORT=
+
+   # Others
+   JWT_SECRET=
+   NEXT_PUBLIC_APP_NAME=
+   ```
+
+   > ⚠️ Do not commit this file to version control.
+
+3. **Seed the database (mandatory before first run)**
+
+   ```bash
+   npm run seed
+   ```
+
+   This populates your database with the initial data required by the app.
+
+4. **Run the development server**
+
+   ```bash
+   npm run dev
+   ```
+
+   The app should now be available at **[http://localhost:3000](http://localhost:3000)**.
+
+---
+
+## 🗄️ Database Setup
+
+This project uses **Sequelize** to manage models, migrations, and seeders.
+
+### Run seeders
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📜 Common Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev        # Start development server
+npm run build      # Build for production
+npm run start      # Start production server
+npm run lint       # Run linter
+npm run seed       # Populate the database
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🧰 Troubleshooting
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Database connection issues**: Verify `DB_HOST`, `DB_PORT`, and credentials.
+- **Seeding errors**: Ensure migrations are completed before seeding.
+- **JWT issues**: Make sure `JWT_SECRET` is a secure, random string.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📄 License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Specify your project’s license here (e.g., MIT).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
 
-### Online database platforms
-
-Database is deployed here
-https://freedb.tech/dashboard/
-
-Database is viewed here
-https://app.popsql.com/
+**Note:** Always create the `.env` file before running `npm run seed`. This step is required to successfully populate your database.
