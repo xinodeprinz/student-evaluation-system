@@ -228,7 +228,7 @@ export default function LoginPage() {
         </motion.div>
 
         <p className="text-center text-gray-600 text-sm mt-6">
-          © 2024 Student Evaluation System - Cameroon
+          © {new Date().getFullYear()} Student Evaluation System - Cameroon
         </p>
       </div>
     </div>

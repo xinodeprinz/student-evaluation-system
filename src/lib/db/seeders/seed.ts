@@ -86,7 +86,7 @@ async function seed() {
     // Create Students
     const student1 = await Student.create({
       userId: studentUser.id,
-      matricule: "STU2024001",
+      matricule: "STU2025001",
       classId: form5A.id,
       dateOfBirth: new Date("2007-03-15"),
       placeOfBirth: "Bamenda",
@@ -98,7 +98,7 @@ async function seed() {
 
     const student2 = await Student.create({
       userId: studentUser2.id,
-      matricule: "STU2024002",
+      matricule: "STU2025002",
       classId: form5A.id,
       dateOfBirth: new Date("2007-07-22"),
       placeOfBirth: "Buea",
@@ -110,7 +110,7 @@ async function seed() {
 
     const student3 = await Student.create({
       userId: studentUser3.id,
-      matricule: "STU2024003",
+      matricule: "STU2025003",
       classId: form4B.id,
       dateOfBirth: new Date("2008-01-10"),
       placeOfBirth: "Limbe",
