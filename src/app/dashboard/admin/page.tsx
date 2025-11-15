@@ -788,13 +788,13 @@ export default function AdminDashboard() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
+                  className={`px-4 sm:px-6 py-3 capitalize sm:py-4 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
                     activeTab === tab
                       ? "border-b-4 border-green-600 text-green-600 bg-green-50"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab.replaceAll("-", " ")}
                 </button>
               ))}
             </div>
