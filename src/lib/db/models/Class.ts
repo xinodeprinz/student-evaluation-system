@@ -1,20 +1,21 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
+import Student from "./Student";
+import Subject from "./Subject";
+import User from "./User";
+import AcademicYear from "./AcademicYear";
 
-export interface ClassAttributes {
+interface ClassAttributes {
   id: number;
   name: string;
   level: string;
-  academicYear: string;
-  teacherId?: number; // FK to users.id (teacher)
+  academicYearId: number;
+  teacherId?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export type ClassCreationAttributes = Optional<
-  ClassAttributes,
-  "id" | "teacherId" | "createdAt" | "updatedAt"
->;
+interface ClassCreationAttributes extends Optional<ClassAttributes, "id"> {}
 
 class Class
   extends Model<ClassAttributes, ClassCreationAttributes>
@@ -23,15 +24,16 @@ class Class
   declare id: number;
   declare name: string;
   declare level: string;
-  declare academicYear: string;
+  declare academicYearId: number;
   declare teacherId?: number;
-  declare readonly createdAt?: Date;
-  declare readonly updatedAt?: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 
   // associations
-  declare students?: any[];
-  declare subjects?: any[];
-  declare teacher?: any;
+  declare students?: Student[];
+  declare subjects?: Subject[];
+  declare teacher?: User;
+  declare academicYear?: AcademicYear;
 }
 
 Class.init(
@@ -42,16 +44,20 @@ Class.init(
       primaryKey: true,
     },
     name: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     level: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    academicYear: {
-      type: DataTypes.STRING(20),
+    academicYearId: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
+      references: {
+        model: "academic_years",
+        key: "id",
+      },
     },
     teacherId: {
       type: DataTypes.INTEGER.UNSIGNED,
@@ -60,14 +66,6 @@ Class.init(
         model: "users",
         key: "id",
       },
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
     },
   },
   {

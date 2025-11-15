@@ -1,8 +1,12 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
 import bcrypt from "bcryptjs";
+import Student from "./Student";
+import Class from "./Class";
+import Subject from "./Subject";
+import Parent from "./Parent";
 
-export type UserRole = "admin" | "teacher" | "student";
+export type UserRole = "admin" | "teacher" | "student" | "parent";
 
 export interface UserAttributes {
   id: number;
@@ -36,9 +40,10 @@ class User
   declare readonly updatedAt?: Date;
 
   // association placeholders (filled via models/index.ts)
-  declare studentProfile?: any;
-  declare classesAsTeacher?: any[];
-  declare subjectsAsTeacher?: any[];
+  declare studentProfile?: Student;
+  declare classesAsTeacher?: Class[];
+  declare subjectsAsTeacher?: Subject[];
+  declare parentProfile?: Parent;
 
   async comparePassword(plain: string): Promise<boolean> {
     // this.password is now the real column value (no shadowing).
@@ -74,7 +79,7 @@ User.init(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM("admin", "teacher", "student"),
+      type: DataTypes.ENUM("admin", "teacher", "student", "parent"),
       allowNull: false,
     },
     phoneNumber: {

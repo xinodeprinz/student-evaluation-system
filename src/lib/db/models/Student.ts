@@ -1,7 +1,10 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
-
-export type Gender = "Male" | "Female";
+import User from "./User";
+import Class from "./Class";
+import Grade from "./Grade";
+import Parent from "./Parent";
+import AcademicYear from "./AcademicYear";
 
 export interface StudentAttributes {
   id: number;
@@ -10,18 +13,15 @@ export interface StudentAttributes {
   classId: number;
   dateOfBirth: Date;
   placeOfBirth: string;
-  gender: Gender;
-  parentName?: string;
-  parentPhone?: string;
+  gender: "Male" | "Female";
   address?: string;
+  academicYearId: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export type StudentCreationAttributes = Optional<
-  StudentAttributes,
-  "id" | "parentName" | "parentPhone" | "address" | "createdAt" | "updatedAt"
->;
+export interface StudentCreationAttributes
+  extends Optional<StudentAttributes, "id"> {}
 
 class Student
   extends Model<StudentAttributes, StudentCreationAttributes>
@@ -33,17 +33,18 @@ class Student
   declare classId: number;
   declare dateOfBirth: Date;
   declare placeOfBirth: string;
-  declare gender: Gender;
-  declare parentName?: string;
-  declare parentPhone?: string;
+  declare gender: "Male" | "Female";
   declare address?: string;
-  declare readonly createdAt?: Date;
-  declare readonly updatedAt?: Date;
+  declare academicYearId: number;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 
   // associations
-  declare user?: any;
-  declare class?: any;
-  declare grades?: any[];
+  declare user?: User;
+  declare class?: Class;
+  declare grades?: Grade[];
+  declare parents?: Parent[];
+  declare academicYear?: AcademicYear;
 }
 
 Student.init(
@@ -62,7 +63,7 @@ Student.init(
       },
     },
     matricule: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
@@ -75,36 +76,28 @@ Student.init(
       },
     },
     dateOfBirth: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.DATE,
       allowNull: false,
     },
     placeOfBirth: {
-      type: DataTypes.STRING(191),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     gender: {
       type: DataTypes.ENUM("Male", "Female"),
       allowNull: false,
     },
-    parentName: {
-      type: DataTypes.STRING(191),
-      allowNull: true,
-    },
-    parentPhone: {
-      type: DataTypes.STRING(50),
-      allowNull: true,
-    },
     address: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
+    academicYearId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      references: {
+        model: "academic_years",
+        key: "id",
+      },
     },
   },
   {
