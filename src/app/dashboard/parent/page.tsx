@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
-import { generateReportCard } from "@/lib/utils/pdf";
+import { generateReportCard, generateTranscript } from "@/lib/utils/pdf";
 
 export default function ParentDashboard() {
   const router = useRouter();
@@ -29,6 +29,7 @@ export default function ParentDashboard() {
   const [sequence, setSequence] = useState("1");
   const [report, setReport] = useState<any>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingTranscript, setDownloadingTranscript] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -159,6 +160,48 @@ export default function ParentDashboard() {
     }
 
     return { color, letter, scoreOn20: scoreOn20.toFixed(1) };
+  };
+
+  const handleDownloadTranscript = async () => {
+    if (!selectedChild) {
+      toast.error("Please select a child");
+      return;
+    }
+
+    setDownloadingTranscript(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(
+        `/api/transcripts?studentId=${selectedChild.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const data = await response.json();
+
+      if (!data.transcript) {
+        toast.error("No transcript data available");
+        return;
+      }
+
+      const pdf = generateTranscript({
+        student: data.transcript.student,
+        academicYear: data.transcript.academicYear,
+        allGrades: data.transcript.allGrades,
+      });
+
+      pdf.save(
+        `Transcript_${
+          data.transcript.student.matricule
+        }_${data.transcript.academicYear.replace("/", "-")}.pdf`
+      );
+      toast.success("Transcript downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating transcript:", error);
+      toast.error("Failed to generate transcript");
+    } finally {
+      setDownloadingTranscript(false);
+    }
   };
 
   if (loading || !user) {
@@ -358,8 +401,8 @@ export default function ParentDashboard() {
               transition={{ delay: 0.5 }}
               className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8"
             >
-              <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
-                <div className="flex-1 grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Term
@@ -390,14 +433,11 @@ export default function ParentDashboard() {
                   </div>
                 </div>
 
-                <div className="lg:w-64">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 invisible lg:visible">
-                    Action
-                  </label>
+                <div className="grid sm:grid-cols-2 gap-4">
                   <button
                     onClick={handleDownloadReport}
                     disabled={grades.length === 0 || downloading}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   >
                     {downloading ? (
                       <>
@@ -411,6 +451,40 @@ export default function ParentDashboard() {
                       </>
                     )}
                   </button>
+
+                  <button
+                    onClick={handleDownloadTranscript}
+                    disabled={downloadingTranscript}
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                  >
+                    {downloadingTranscript ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-5 h-5" />
+                        <span>Download Transcript</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border-2 border-purple-200">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">
+                    📄 Document Types:
+                  </p>
+                  <ul className="text-xs text-gray-700 space-y-1">
+                    <li>
+                      • <strong>Report Card:</strong> Shows grades for the
+                      selected term and sequence
+                    </li>
+                    <li>
+                      • <strong>Transcript:</strong> Complete academic record
+                      with all grades across all terms
+                    </li>
+                  </ul>
                 </div>
               </div>
             </motion.div>

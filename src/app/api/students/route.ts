@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Student, User, Class, AcademicYear } from "@/lib/db/models";
+import {
+  Student,
+  User,
+  Class,
+  AcademicYear,
+  StudentParent,
+} from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
@@ -121,6 +127,17 @@ export async function POST(request: NextRequest) {
       address: data.address,
       academicYearId: academicYearId,
     });
+
+    // Link to parents if provided
+    if (data.parentIds && data.parentIds.length > 0) {
+      for (const parentId of data.parentIds) {
+        await StudentParent.create({
+          studentId: student.id,
+          parentId: parseInt(parentId),
+          relationship: data.relationship || "Guardian",
+        });
+      }
+    }
 
     const fullStudent = await Student.findByPk(student.id, {
       include: [

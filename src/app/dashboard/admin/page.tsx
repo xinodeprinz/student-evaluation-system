@@ -39,6 +39,7 @@ import {
   academicYearSchema,
 } from "@/lib/validations/schemas";
 import BulkReportGenerator from "@/components/BulkReportGenerator";
+import MultiSelect from "@/components/MultiSelect";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -73,6 +74,12 @@ export default function AdminDashboard() {
     type: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedParents, setSelectedParents] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  const [selectedStudents, setSelectedStudents] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
 
   // Form hooks
   const studentForm = useForm<StudentFormData>({
@@ -193,12 +200,13 @@ export default function AdminDashboard() {
       | "teacher"
       | "class"
       | "subject"
-      | "academic-year"
       | "parent"
+      | "academic-year"
   ) => {
     setEditingItem(null);
     setModalType(type);
     setShowModal(true);
+
     // Reset all forms
     studentForm.reset({
       firstName: "",
@@ -211,15 +219,17 @@ export default function AdminDashboard() {
       dateOfBirth: "",
       placeOfBirth: "",
       gender: "Male",
-      parentName: "",
-      parentPhone: "",
       address: "",
     });
     teacherForm.reset();
-    classForm.reset({ academicYear: "2024/2025" });
+    classForm.reset();
     subjectForm.reset({ coefficient: 1 });
     parentForm.reset();
     academicYearForm.reset();
+
+    // Reset selected values
+    setSelectedParents([]);
+    setSelectedStudents([]);
   };
 
   const openEditModal = (
@@ -248,10 +258,25 @@ export default function AdminDashboard() {
         dateOfBirth: new Date(item.dateOfBirth).toISOString().split("T")[0],
         placeOfBirth: item.placeOfBirth,
         gender: item.gender,
-        parentName: item.parentName || "",
-        parentPhone: item.parentPhone || "",
         address: item.address || "",
       });
+
+      // Fetch and set linked parents
+      const token = localStorage.getItem("token");
+      fetch(`/api/students/${item.id}/parents`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.parents) {
+            setSelectedParents(
+              data.parents.map((p: any) => ({
+                value: p.id.toString(),
+                label: `${p.user.firstName} ${p.user.lastName} - ${p.user.email}`,
+              }))
+            );
+          }
+        });
     } else if (type === "teacher") {
       teacherForm.reset({
         firstName: item.firstName,
@@ -285,6 +310,23 @@ export default function AdminDashboard() {
         address: item.address || "",
         occupation: item.occupation || "",
       });
+
+      // Fetch and set linked students
+      const token = localStorage.getItem("token");
+      fetch(`/api/parents/${item.id}/children`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.children) {
+            setSelectedStudents(
+              data.children.map((s: any) => ({
+                value: s.id.toString(),
+                label: `${s.user.firstName} ${s.user.lastName} - ${s.matricule} (${s.class.name})`,
+              }))
+            );
+          }
+        });
     } else if (type === "academic-year") {
       academicYearForm.reset({
         year: item.year,
@@ -298,19 +340,25 @@ export default function AdminDashboard() {
   const handleCreateStudent = async (data: StudentFormData) => {
     const token = localStorage.getItem("token");
     try {
+      const payload = {
+        ...data,
+        parentIds: selectedParents.map((p) => p.value),
+      };
+
       const response = await fetch("/api/students", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to create student");
 
       toast.success("Student created successfully!");
       setShowModal(false);
+      setSelectedParents([]);
       fetchDashboardData(token!);
     } catch (error) {
       toast.error("Failed to create student");
@@ -320,19 +368,25 @@ export default function AdminDashboard() {
   const handleUpdateStudent = async (data: StudentFormData) => {
     const token = localStorage.getItem("token");
     try {
+      const payload = {
+        ...data,
+        parentIds: selectedParents.map((p) => p.value),
+      };
+
       const response = await fetch(`/api/students/${editingItem.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to update student");
 
       toast.success("Student updated successfully!");
       setShowModal(false);
+      setSelectedParents([]);
       fetchDashboardData(token!);
     } catch (error) {
       toast.error("Failed to update student");
@@ -528,19 +582,25 @@ export default function AdminDashboard() {
   const handleCreateParent = async (data: ParentFormData) => {
     const token = localStorage.getItem("token");
     try {
+      const payload = {
+        ...data,
+        studentIds: selectedStudents.map((s) => s.value),
+      };
+
       const response = await fetch("/api/parents", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to create parent");
 
       toast.success("Parent created successfully!");
       setShowModal(false);
+      setSelectedStudents([]);
       fetchDashboardData(token!);
     } catch (error) {
       toast.error("Failed to create parent");
@@ -550,19 +610,25 @@ export default function AdminDashboard() {
   const handleUpdateParent = async (data: ParentFormData) => {
     const token = localStorage.getItem("token");
     try {
+      const payload = {
+        ...data,
+        studentIds: selectedStudents.map((s) => s.value),
+      };
+
       const response = await fetch(`/api/parents/${editingItem.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to update parent");
 
       toast.success("Parent updated successfully!");
       setShowModal(false);
+      setSelectedStudents([]);
       fetchDashboardData(token!);
     } catch (error) {
       toast.error("Failed to update parent");
@@ -1093,7 +1159,7 @@ export default function AdminDashboard() {
                           {classItem.academicYear}
                         </p>
                         <p className="text-gray-600 truncate">
-                          <span className="font-semibold">Class Teacher:</span>{" "}
+                          <span className="font-semibold">Class Master:</span>{" "}
                           {classItem.teacher
                             ? `${classItem.teacher.firstName} ${classItem.teacher.lastName}`
                             : "Not Assigned"}
@@ -1626,29 +1692,32 @@ export default function AdminDashboard() {
               />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <FormInput
-                label="Parent Name"
-                name="parentName"
-                register={studentForm.register}
-                error={studentForm.formState.errors.parentName}
-              />
-              <FormInput
-                label="Parent Phone"
-                name="parentPhone"
-                register={studentForm.register}
-                error={studentForm.formState.errors.parentPhone}
-              />
-            </div>
-
             <FormInput
               label="Address"
               name="address"
               type="textarea"
               register={studentForm.register}
               error={studentForm.formState.errors.address}
-              rows={3}
+              rows={2}
             />
+
+            {/* Link to Parents */}
+            <div>
+              <MultiSelect
+                label="Link to Parents (Optional)"
+                options={parents.map((parent) => ({
+                  value: parent.id.toString(),
+                  label: `${parent.user.firstName} ${parent.user.lastName} - ${parent.user.email}`,
+                }))}
+                value={selectedParents}
+                onChange={setSelectedParents}
+                placeholder="Search and select parents..."
+                isMulti={true}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Search by name or email to link this student to their parents
+              </p>
+            </div>
 
             <div className="flex gap-4 pt-4">
               <button
@@ -1763,15 +1832,19 @@ export default function AdminDashboard() {
 
             <FormInput
               label="Academic Year"
-              name="academicYear"
+              name="academicYearId"
+              type="select"
               register={classForm.register}
-              error={classForm.formState.errors.academicYear}
-              placeholder="e.g., 2024/2025"
+              error={classForm.formState.errors.academicYearId}
+              options={academicYears.map((year) => ({
+                value: year.id.toString(),
+                label: `${year.year} ${year.isActive ? "(Active)" : ""}`,
+              }))}
               required
             />
 
             <FormInput
-              label="Class Teacher"
+              label="Class Master"
               name="teacherId"
               type="select"
               register={classForm.register}
@@ -1949,45 +2022,38 @@ export default function AdminDashboard() {
               rows={2}
             />
 
-            {!editingItem && (
-              <>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Link to Students (Optional)
-                  </label>
-                  <select
-                    multiple
-                    {...parentForm.register("studentIds")}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors"
-                    size={5}
-                  >
-                    {students.map((student) => (
-                      <option key={student.id} value={student.id}>
-                        {student.user.firstName} {student.user.lastName} -{" "}
-                        {student.matricule}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Hold Ctrl/Cmd to select multiple
-                  </p>
-                </div>
+            {/* Link to Students */}
+            <div>
+              <MultiSelect
+                label="Link to Children (Optional)"
+                options={students.map((student) => ({
+                  value: student.id.toString(),
+                  label: `${student.user.firstName} ${student.user.lastName} - ${student.matricule} (${student.class.name})`,
+                }))}
+                value={selectedStudents}
+                onChange={setSelectedStudents}
+                placeholder="Search and select students..."
+                isMulti={true}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Search by name or matricule to link this parent to their
+                children
+              </p>
+            </div>
 
-                <FormInput
-                  label="Relationship"
-                  name="relationship"
-                  type="select"
-                  register={parentForm.register}
-                  error={parentForm.formState.errors.relationship}
-                  options={[
-                    { value: "Father", label: "Father" },
-                    { value: "Mother", label: "Mother" },
-                    { value: "Guardian", label: "Guardian" },
-                    { value: "Other", label: "Other" },
-                  ]}
-                />
-              </>
-            )}
+            <FormInput
+              label="Relationship"
+              name="relationship"
+              type="select"
+              register={parentForm.register}
+              error={parentForm.formState.errors.relationship}
+              options={[
+                { value: "Father", label: "Father" },
+                { value: "Mother", label: "Mother" },
+                { value: "Guardian", label: "Guardian" },
+                { value: "Other", label: "Other" },
+              ]}
+            />
 
             <div className="flex gap-4 pt-4">
               <button
