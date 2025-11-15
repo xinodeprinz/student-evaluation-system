@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Parent, User, Student, StudentParent } from "@/lib/db/models";
+import { Parent, User, StudentParent } from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 

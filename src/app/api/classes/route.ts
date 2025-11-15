@@ -44,11 +44,10 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json();
-
     const newClass = await Class.create({
       name: data.name,
       level: data.level,
-      academicYear: data.academicYear,
+      academicYearId: data.academicYearId,
       teacherId: data.teacherId || null,
     });
 

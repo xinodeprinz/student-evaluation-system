@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Grade, Student, Subject, User } from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
+import { WhereOptions } from "sequelize";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     const term = searchParams.get("term");
     const sequence = searchParams.get("sequence");
 
-    const whereClause: any = {};
+    const whereClause: WhereOptions<Grade> = {};
     if (studentId) whereClause.studentId = studentId;
     if (term) whereClause.term = term;
     if (sequence) whereClause.sequence = sequence;

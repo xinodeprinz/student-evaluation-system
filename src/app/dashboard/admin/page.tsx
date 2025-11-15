@@ -92,7 +92,6 @@ export default function AdminDashboard() {
 
   const classForm = useForm<ClassFormData>({
     resolver: zodResolver(classSchema),
-    defaultValues: { academicYear: "2024/2025" },
   });
 
   const subjectForm = useForm<SubjectFormData>({
@@ -212,7 +211,6 @@ export default function AdminDashboard() {
       firstName: "",
       lastName: "",
       email: "",
-      password: "",
       phoneNumber: "",
       matricule: "",
       classId: "",
@@ -251,7 +249,6 @@ export default function AdminDashboard() {
         firstName: item.user.firstName,
         lastName: item.user.lastName,
         email: item.user.email,
-        password: "",
         phoneNumber: item.user.phoneNumber || "",
         matricule: item.matricule,
         classId: item.classId.toString(),
@@ -289,7 +286,7 @@ export default function AdminDashboard() {
       classForm.reset({
         name: item.name,
         level: item.level,
-        academicYear: item.academicYear,
+        academicYearId: item.academicYearId,
         teacherId: item.teacherId?.toString() || "",
       });
     } else if (type === "subject") {
