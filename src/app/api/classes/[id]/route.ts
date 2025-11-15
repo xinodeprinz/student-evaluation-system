@@ -26,7 +26,7 @@ export async function PUT(
     await classItem.update({
       name: data.name,
       level: data.level,
-      academicYear: data.academicYear,
+      academicYearId: data.academicYearId,
       teacherId: data.teacherId || null,
     });
 
