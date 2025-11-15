@@ -24,6 +24,9 @@ Subject.belongsTo(Class, { foreignKey: "classId", as: "class" });
 User.hasMany(Subject, { foreignKey: "teacherId", as: "subjects" });
 Subject.belongsTo(User, { foreignKey: "teacherId", as: "teacher" });
 
+User.hasMany(Class, { foreignKey: "teacherId", as: "classesAsTeacher" });
+Class.belongsTo(User, { foreignKey: "teacherId", as: "teacher" });
+
 // Grade relationships
 Student.hasMany(Grade, { foreignKey: "studentId", as: "grades" });
 Grade.belongsTo(Student, { foreignKey: "studentId", as: "student" });
@@ -37,11 +40,15 @@ Parent.belongsToMany(Student, {
   foreignKey: "parentId",
   as: "children",
 });
+
 Student.belongsToMany(Parent, {
   through: StudentParent,
   foreignKey: "studentId",
   as: "parents",
 });
+
+StudentParent.belongsTo(Student, { foreignKey: "studentId", as: "student" });
+StudentParent.belongsTo(Parent, { foreignKey: "parentId", as: "parent" });
 
 // Academic Year relationships
 AcademicYear.hasMany(Student, { foreignKey: "academicYearId", as: "students" });

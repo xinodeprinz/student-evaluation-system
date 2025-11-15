@@ -126,7 +126,7 @@ export default function TeacherDashboard() {
 
   const handleSubmitGrades = async () => {
     const token = localStorage.getItem("token");
-    const selectedStudents = students?.filter(
+    const selectedStudents = students.filter(
       (s) => grades[`${s.id}-${selectedSubject}`]?.score !== undefined
     );
 
@@ -229,7 +229,7 @@ export default function TeacherDashboard() {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white"
               >
                 <option value="">Select Class</option>
-                {classes?.map((cls) => (
+                {classes.map((cls) => (
                   <option key={cls.id} value={cls.id}>
                     {cls.name}
                   </option>

@@ -26,7 +26,7 @@ export async function PUT(
     }
 
     // Update user data
-    await student.user.update({
+    await student.user?.update({
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,

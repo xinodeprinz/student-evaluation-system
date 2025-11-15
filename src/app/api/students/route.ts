@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
           {
             model: Class,
             as: "class",
-            attributes: ["name", "level", "academicYear"],
+            attributes: ["name", "level"],
+            include: [{ model: AcademicYear, as: "academicYear" }],
           },
         ],
       });
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
         {
           model: Class,
           as: "class",
-          attributes: ["name", "level", "academicYear"],
+          attributes: ["name", "level"],
+          include: [{ model: AcademicYear, as: "academicYear" }],
         },
       ],
       order: [["matricule", "ASC"]],

@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Grade, Student, Subject, User, Class } from "@/lib/db/models";
+import {
+  Grade,
+  Student,
+  Subject,
+  User,
+  Class,
+  AcademicYear,
+} from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
@@ -30,7 +37,8 @@ export async function GET(request: NextRequest) {
         {
           model: Class,
           as: "class",
-          attributes: ["name", "level", "academicYear"],
+          attributes: ["name", "level"],
+          include: [{ model: AcademicYear, as: "academicYear" }],
         },
       ],
     });
@@ -56,24 +64,24 @@ export async function GET(request: NextRequest) {
 
     const reportData = {
       student: {
-        firstName: student.user.firstName,
-        lastName: student.user.lastName,
+        firstName: student.user?.firstName,
+        lastName: student.user?.lastName,
         matricule: student.matricule,
-        className: student.class.name,
+        className: student.class?.name,
       },
       class: {
-        name: student.class.name,
-        level: student.class.level,
-        academicYear: student.class.academicYear,
+        name: student.class?.name,
+        level: student.class?.level,
+        academicYear: student.class?.academicYear,
       },
       term: parseInt(term),
       sequence: parseInt(sequence),
       grades: grades.map((g) => ({
-        subject: g.subject.name,
-        code: g.subject.code,
+        subject: g.subject?.name,
+        code: g.subject?.code,
         score: g.score,
         maxScore: g.maxScore,
-        coefficient: g.subject.coefficient,
+        coefficient: g.subject?.coefficient,
         comment: g.comment,
       })),
     };

@@ -124,7 +124,7 @@ export default function BulkReportGenerator({
               <option value="" className="text-gray-900">
                 Select Class
               </option>
-              {classes?.map((cls) => (
+              {classes.map((cls) => (
                 <option key={cls.id} value={cls.id} className="text-gray-900">
                   {cls.name}
                 </option>

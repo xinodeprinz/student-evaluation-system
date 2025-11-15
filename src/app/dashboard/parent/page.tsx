@@ -57,7 +57,7 @@ export default function ParentDashboard() {
       const data = await response.json();
       setChildren(data.children);
 
-      if (data.children?.length > 0) {
+      if (data.children.length > 0) {
         setSelectedChild(data.children[0]);
         fetchGrades(token, data.children[0].id);
       }
@@ -165,7 +165,7 @@ export default function ParentDashboard() {
     return <LoadingSpinner />;
   }
 
-  if (children?.length === 0) {
+  if (children.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
         <Toaster position="top-right" />
@@ -215,8 +215,8 @@ export default function ParentDashboard() {
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-semibold">
-                    {children?.length}{" "}
-                    {children?.length === 1 ? "Child" : "Children"}
+                    {children.length}{" "}
+                    {children.length === 1 ? "Child" : "Children"}
                   </span>
                 </div>
               </div>
@@ -235,7 +235,7 @@ export default function ParentDashboard() {
             Select Child
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {children?.map((child) => (
+            {children.map((child) => (
               <motion.button
                 key={child.id}
                 onClick={() => setSelectedChild(child)}

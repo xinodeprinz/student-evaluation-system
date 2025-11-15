@@ -499,7 +499,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredStudents = students?.filter((student) =>
+  const filteredStudents = students.filter((student) =>
     `${student.user.firstName} ${student.user.lastName} ${student.matricule}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
@@ -511,7 +511,7 @@ export default function AdminDashboard() {
       .includes(searchTerm.toLowerCase())
   );
 
-  const filteredClasses = classes?.filter((cls) =>
+  const filteredClasses = classes.filter((cls) =>
     cls.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -854,7 +854,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {filteredStudents?.map((student, index) => (
+                          {filteredStudents.map((student, index) => (
                             <motion.tr
                               key={student.id}
                               initial={{ opacity: 0, x: -20 }}
@@ -926,7 +926,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {filteredStudents?.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <div className="text-center py-12">
                     <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 text-lg">No students found</p>
@@ -1066,7 +1066,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {filteredClasses?.map((classItem, index) => (
+                  {filteredClasses.map((classItem, index) => (
                     <motion.div
                       key={classItem.id}
                       initial={{ opacity: 0, scale: 0.95 }}
@@ -1123,7 +1123,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {filteredClasses?.length === 0 && (
+                {filteredClasses.length === 0 && (
                   <div className="text-center py-12">
                     <School className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 text-lg">No classes found</p>
@@ -1618,7 +1618,7 @@ export default function AdminDashboard() {
                 type="select"
                 register={studentForm.register}
                 error={studentForm.formState.errors.classId}
-                options={classes?.map((cls) => ({
+                options={classes.map((cls) => ({
                   value: cls.id.toString(),
                   label: cls.name,
                 }))}
@@ -1844,7 +1844,7 @@ export default function AdminDashboard() {
               type="select"
               register={subjectForm.register}
               error={subjectForm.formState.errors.classId}
-              options={classes?.map((cls) => ({
+              options={classes.map((cls) => ({
                 value: cls.id.toString(),
                 label: cls.name,
               }))}
