@@ -1,5 +1,8 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
+import Class from "./Class";
+import User from "./User";
+import Grade from "./Grade";
 
 export interface SubjectAttributes {
   id: number;
@@ -31,9 +34,9 @@ class Subject
   declare readonly updatedAt?: Date;
 
   // associations
-  declare class?: any;
-  declare teacher?: any;
-  declare grades?: any[];
+  declare class?: Class;
+  declare teacher?: User;
+  declare grades?: Grade[];
 }
 
 Subject.init(

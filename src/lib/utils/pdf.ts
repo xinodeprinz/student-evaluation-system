@@ -19,6 +19,26 @@ interface StudentReportData {
   academicYear: string;
 }
 
+interface TranscriptData {
+  student: {
+    firstName: string;
+    lastName: string;
+    matricule: string;
+    className: string;
+    dateOfBirth?: string;
+    placeOfBirth?: string;
+  };
+  academicYear: string;
+  allGrades: Array<{
+    term: number;
+    sequence: number;
+    subject: string;
+    score: number;
+    maxScore: number;
+    coefficient: number;
+  }>;
+}
+
 export function generateReportCard(data: StudentReportData): jsPDF {
   const doc = new jsPDF();
 
@@ -133,6 +153,197 @@ export function generateReportCard(data: StudentReportData): jsPDF {
   doc.text(new Date().toLocaleDateString("en-GB"), 105, 285, {
     align: "center",
   });
+
+  return doc;
+}
+
+export function generateTranscript(data: TranscriptData): jsPDF {
+  const doc = new jsPDF();
+
+  // Header with Cameroon colors
+  doc.setFillColor(0, 122, 51);
+  doc.rect(0, 0, 210, 15, "F");
+
+  doc.setFillColor(206, 17, 38);
+  doc.rect(0, 15, 210, 5, "F");
+
+  doc.setFillColor(252, 209, 22);
+  doc.rect(0, 20, 210, 5, "F");
+
+  // School Name
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("STUDENT EVALUATION SYSTEM", 105, 10, { align: "center" });
+
+  // Transcript Title
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(16);
+  doc.text("ACADEMIC TRANSCRIPT", 105, 35, { align: "center" });
+
+  // Student Information
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+
+  const studentInfo = [
+    `Name: ${data.student.firstName} ${data.student.lastName}`,
+    `Matricule: ${data.student.matricule}`,
+    `Class: ${data.student.className}`,
+    `Academic Year: ${data.academicYear}`,
+  ];
+
+  if (data.student.dateOfBirth) {
+    studentInfo.push(`Date of Birth: ${data.student.dateOfBirth}`);
+  }
+  if (data.student.placeOfBirth) {
+    studentInfo.push(`Place of Birth: ${data.student.placeOfBirth}`);
+  }
+
+  let yPos = 45;
+  studentInfo.forEach((info) => {
+    doc.text(info, 20, yPos);
+    yPos += 7;
+  });
+
+  // Group grades by term and sequence
+  const groupedGrades: { [key: string]: typeof data.allGrades } = {};
+  data.allGrades.forEach((grade) => {
+    const key = `T${grade.term}S${grade.sequence}`;
+    if (!groupedGrades[key]) {
+      groupedGrades[key] = [];
+    }
+    groupedGrades[key].push(grade);
+  });
+
+  yPos += 5;
+
+  // Create table for each term/sequence
+  Object.keys(groupedGrades)
+    .sort()
+    .forEach((key, index) => {
+      const grades = groupedGrades[key];
+      const term = grades[0].term;
+      const sequence = grades[0].sequence;
+
+      // Check if we need a new page
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Term ${term} - Sequence ${sequence}`, 20, yPos);
+      yPos += 5;
+
+      const tableData = grades.map((grade) => {
+        const percentage = ((grade.score / grade.maxScore) * 100).toFixed(1);
+        return [
+          grade.subject,
+          grade.coefficient.toString(),
+          grade.score.toFixed(1),
+          grade.maxScore.toFixed(1),
+          `${percentage}%`,
+        ];
+      });
+
+      const totalScore = grades.reduce((sum, g) => sum + g.score, 0);
+      const totalMaxScore = grades.reduce((sum, g) => sum + g.maxScore, 0);
+      const totalCoefficient = grades.reduce(
+        (sum, g) => sum + g.coefficient,
+        0
+      );
+      const weightedScore = grades.reduce(
+        (sum, g) => sum + g.score * g.coefficient,
+        0
+      );
+      const weightedMaxScore = grades.reduce(
+        (sum, g) => sum + g.maxScore * g.coefficient,
+        0
+      );
+      const average = ((weightedScore / weightedMaxScore) * 20).toFixed(2);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["Subject", "Coef.", "Score", "Max", "Percentage"]],
+        body: tableData,
+        foot: [
+          [
+            "TOTAL",
+            totalCoefficient.toString(),
+            totalScore.toFixed(1),
+            totalMaxScore.toFixed(1),
+            `Avg: ${average}/20`,
+          ],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [0, 122, 51], textColor: 255 },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          textColor: 0,
+          fontStyle: "bold",
+        },
+        margin: { left: 20, right: 20 },
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+    });
+
+  // Overall Summary
+  if (data.allGrades.length > 0) {
+    const overallWeightedScore = data.allGrades.reduce(
+      (sum, g) => sum + g.score * g.coefficient,
+      0
+    );
+    const overallWeightedMaxScore = data.allGrades.reduce(
+      (sum, g) => sum + g.maxScore * g.coefficient,
+      0
+    );
+    const overallAverage = (
+      (overallWeightedScore / overallWeightedMaxScore) *
+      20
+    ).toFixed(2);
+
+    if (yPos > 250) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("OVERALL PERFORMANCE", 20, yPos);
+    yPos += 10;
+
+    doc.setFontSize(12);
+    doc.text(`Overall Average: ${overallAverage}/20`, 20, yPos);
+
+    let grade = "F";
+    const avg = parseFloat(overallAverage);
+    if (avg >= 16) grade = "A - Excellent";
+    else if (avg >= 14) grade = "B - Very Good";
+    else if (avg >= 12) grade = "C - Good";
+    else if (avg >= 10) grade = "D - Fair";
+    else grade = "F - Fail";
+
+    yPos += 7;
+    doc.text(`Grade: ${grade}`, 20, yPos);
+  }
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text("Generated by Student Evaluation System - Cameroon", 105, 285, {
+      align: "center",
+    });
+    doc.text(
+      `Page ${i} of ${pageCount} | ${new Date().toLocaleDateString("en-GB")}`,
+      105,
+      290,
+      { align: "center" }
+    );
+  }
 
   return doc;
 }

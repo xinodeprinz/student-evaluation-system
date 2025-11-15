@@ -20,6 +20,7 @@ import {
   FileText,
   TrendingUp,
   Search,
+  Calendar,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -32,7 +33,13 @@ import {
   TeacherFormData,
   ClassFormData,
   SubjectFormData,
+  ParentFormData,
+  parentSchema,
+  AcademicYearFormData,
+  academicYearSchema,
 } from "@/lib/validations/schemas";
+import BulkReportGenerator from "@/components/BulkReportGenerator";
+import MultiSelect from "@/components/MultiSelect";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -40,13 +47,21 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [academicYears, setAcademicYears] = useState<any[]>([]);
+  const [parents, setParents] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<
-    "student" | "teacher" | "class" | "subject" | ""
+    | "student"
+    | "teacher"
+    | "class"
+    | "subject"
+    | "academic-year"
+    | "parent"
+    | ""
   >("");
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -59,6 +74,12 @@ export default function AdminDashboard() {
     type: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedParents, setSelectedParents] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  const [selectedStudents, setSelectedStudents] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
 
   // Form hooks
   const studentForm = useForm<StudentFormData>({
@@ -77,6 +98,14 @@ export default function AdminDashboard() {
   const subjectForm = useForm<SubjectFormData>({
     resolver: zodResolver(subjectSchema),
     defaultValues: { coefficient: 1 },
+  });
+
+  const parentForm = useForm<ParentFormData>({
+    resolver: zodResolver(parentSchema),
+  });
+
+  const academicYearForm = useForm<AcademicYearFormData>({
+    resolver: zodResolver(academicYearSchema),
   });
 
   useEffect(() => {
@@ -100,39 +129,63 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async (token: string) => {
     try {
-      const [statsRes, studentsRes, teachersRes, classesRes, subjectsRes] =
-        await Promise.all([
-          fetch("/api/dashboard/stats", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("/api/students", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("/api/teachers", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("/api/classes", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("/api/subjects", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+      const [
+        statsRes,
+        studentsRes,
+        teachersRes,
+        classesRes,
+        subjectsRes,
+        academicYearsRes,
+        parentsRes,
+      ] = await Promise.all([
+        fetch("/api/dashboard/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/students", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/teachers", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/classes", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/subjects", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/academic-years", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/parents", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-      const [statsData, studentsData, teachersData, classesData, subjectsData] =
-        await Promise.all([
-          statsRes.json(),
-          studentsRes.json(),
-          teachersRes.json(),
-          classesRes.json(),
-          subjectsRes.json(),
-        ]);
+      const [
+        statsData,
+        studentsData,
+        teachersData,
+        classesData,
+        subjectsData,
+        academicYearsData,
+        parentsData,
+      ] = await Promise.all([
+        statsRes.json(),
+        studentsRes.json(),
+        teachersRes.json(),
+        classesRes.json(),
+        subjectsRes.json(),
+        academicYearsRes.json(),
+        parentsRes.json(),
+      ]);
 
       setStats(statsData.stats);
       setStudents(studentsData.students);
       setTeachers(teachersData.teachers);
       setClasses(classesData.classes);
       setSubjects(subjectsData.subjects);
+      setAcademicYears(academicYearsData.academicYears);
+      setParents(parentsData.parents);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load dashboard data");
@@ -142,11 +195,18 @@ export default function AdminDashboard() {
   };
 
   const openCreateModal = (
-    type: "student" | "teacher" | "class" | "subject"
+    type:
+      | "student"
+      | "teacher"
+      | "class"
+      | "subject"
+      | "parent"
+      | "academic-year"
   ) => {
     setEditingItem(null);
     setModalType(type);
     setShowModal(true);
+
     // Reset all forms
     studentForm.reset({
       firstName: "",
@@ -159,18 +219,28 @@ export default function AdminDashboard() {
       dateOfBirth: "",
       placeOfBirth: "",
       gender: "Male",
-      parentName: "",
-      parentPhone: "",
       address: "",
     });
     teacherForm.reset();
-    classForm.reset({ academicYear: "2024/2025" });
+    classForm.reset();
     subjectForm.reset({ coefficient: 1 });
+    parentForm.reset();
+    academicYearForm.reset();
+
+    // Reset selected values
+    setSelectedParents([]);
+    setSelectedStudents([]);
   };
 
   const openEditModal = (
     item: any,
-    type: "student" | "teacher" | "class" | "subject"
+    type:
+      | "student"
+      | "teacher"
+      | "class"
+      | "subject"
+      | "academic-year"
+      | "parent"
   ) => {
     setEditingItem(item);
     setModalType(type);
@@ -188,10 +258,25 @@ export default function AdminDashboard() {
         dateOfBirth: new Date(item.dateOfBirth).toISOString().split("T")[0],
         placeOfBirth: item.placeOfBirth,
         gender: item.gender,
-        parentName: item.parentName || "",
-        parentPhone: item.parentPhone || "",
         address: item.address || "",
       });
+
+      // Fetch and set linked parents
+      const token = localStorage.getItem("token");
+      fetch(`/api/students/${item.id}/parents`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.parents) {
+            setSelectedParents(
+              data.parents.map((p: any) => ({
+                value: p.id.toString(),
+                label: `${p.user.firstName} ${p.user.lastName} - ${p.user.email}`,
+              }))
+            );
+          }
+        });
     } else if (type === "teacher") {
       teacherForm.reset({
         firstName: item.firstName,
@@ -215,25 +300,65 @@ export default function AdminDashboard() {
         classId: item.classId.toString(),
         teacherId: item.teacherId?.toString() || "",
       });
+    } else if (type === "parent") {
+      parentForm.reset({
+        firstName: item.user.firstName,
+        lastName: item.user.lastName,
+        email: item.user.email,
+        password: "",
+        phoneNumber: item.phoneNumber || "",
+        address: item.address || "",
+        occupation: item.occupation || "",
+      });
+
+      // Fetch and set linked students
+      const token = localStorage.getItem("token");
+      fetch(`/api/parents/${item.id}/children`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.children) {
+            setSelectedStudents(
+              data.children.map((s: any) => ({
+                value: s.id.toString(),
+                label: `${s.user.firstName} ${s.user.lastName} - ${s.matricule} (${s.class.name})`,
+              }))
+            );
+          }
+        });
+    } else if (type === "academic-year") {
+      academicYearForm.reset({
+        year: item.year,
+        startDate: new Date(item.startDate).toISOString().split("T")[0],
+        endDate: new Date(item.endDate).toISOString().split("T")[0],
+        isActive: item.isActive,
+      });
     }
   };
 
   const handleCreateStudent = async (data: StudentFormData) => {
     const token = localStorage.getItem("token");
     try {
+      const payload = {
+        ...data,
+        parentIds: selectedParents.map((p) => p.value),
+      };
+
       const response = await fetch("/api/students", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to create student");
 
       toast.success("Student created successfully!");
       setShowModal(false);
+      setSelectedParents([]);
       fetchDashboardData(token!);
     } catch (error) {
       toast.error("Failed to create student");
@@ -243,19 +368,25 @@ export default function AdminDashboard() {
   const handleUpdateStudent = async (data: StudentFormData) => {
     const token = localStorage.getItem("token");
     try {
+      const payload = {
+        ...data,
+        parentIds: selectedParents.map((p) => p.value),
+      };
+
       const response = await fetch(`/api/students/${editingItem.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to update student");
 
       toast.success("Student updated successfully!");
       setShowModal(false);
+      setSelectedParents([]);
       fetchDashboardData(token!);
     } catch (error) {
       toast.error("Failed to update student");
@@ -448,6 +579,106 @@ export default function AdminDashboard() {
     return <LoadingSpinner />;
   }
 
+  const handleCreateParent = async (data: ParentFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const payload = {
+        ...data,
+        studentIds: selectedStudents.map((s) => s.value),
+      };
+
+      const response = await fetch("/api/parents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to create parent");
+
+      toast.success("Parent created successfully!");
+      setShowModal(false);
+      setSelectedStudents([]);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to create parent");
+    }
+  };
+
+  const handleUpdateParent = async (data: ParentFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const payload = {
+        ...data,
+        studentIds: selectedStudents.map((s) => s.value),
+      };
+
+      const response = await fetch(`/api/parents/${editingItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to update parent");
+
+      toast.success("Parent updated successfully!");
+      setShowModal(false);
+      setSelectedStudents([]);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to update parent");
+    }
+  };
+
+  const handleCreateAcademicYear = async (data: AcademicYearFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("/api/academic-years", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to create academic year");
+
+      toast.success("Academic year created successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to create academic year");
+    }
+  };
+
+  const handleUpdateAcademicYear = async (data: AcademicYearFormData) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`/api/academic-years/${editingItem.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) throw new Error("Failed to update academic year");
+
+      toast.success("Academic year updated successfully!");
+      setShowModal(false);
+      fetchDashboardData(token!);
+    } catch (error) {
+      toast.error("Failed to update academic year");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
       <Toaster position="top-right" />
@@ -545,21 +776,27 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
           <div className="border-b border-gray-200 overflow-x-auto">
             <div className="flex">
-              {["overview", "students", "teachers", "classes", "subjects"].map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
-                      activeTab === tab
-                        ? "border-b-4 border-green-600 text-green-600 bg-green-50"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                )
-              )}
+              {[
+                "overview",
+                "students",
+                "teachers",
+                "classes",
+                "subjects",
+                "academic-years",
+                "parents",
+              ].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 sm:px-6 py-3 capitalize sm:py-4 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
+                    activeTab === tab
+                      ? "border-b-4 border-green-600 text-green-600 bg-green-50"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  {tab.replaceAll("-", " ")}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -574,7 +811,7 @@ export default function AdminDashboard() {
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
                   Dashboard Overview
                 </h3>
-                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
                   <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-white shadow-xl hover:shadow-2xl transition-shadow">
                     <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 mb-4" />
                     <h4 className="text-lg sm:text-xl font-bold mb-2">
@@ -618,6 +855,12 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {/* Bulk Report Generator */}
+                <BulkReportGenerator
+                  classes={classes}
+                  academicYears={academicYears}
+                />
               </motion.div>
             )}
 
@@ -916,7 +1159,7 @@ export default function AdminDashboard() {
                           {classItem.academicYear}
                         </p>
                         <p className="text-gray-600 truncate">
-                          <span className="font-semibold">Class Teacher:</span>{" "}
+                          <span className="font-semibold">Class Master:</span>{" "}
                           {classItem.teacher
                             ? `${classItem.teacher.firstName} ${classItem.teacher.lastName}`
                             : "Not Assigned"}
@@ -1091,6 +1334,246 @@ export default function AdminDashboard() {
                 )}
               </motion.div>
             )}
+
+            {/* Academic Years Tab */}
+            {activeTab === "academic-years" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    Academic Years Management
+                  </h3>
+                  <button
+                    onClick={() => openCreateModal("academic-year")}
+                    className="flex items-center justify-center gap-2 bg-indigo-500 text-white px-4 py-2 rounded-xl hover:bg-indigo-600 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Academic Year</span>
+                  </button>
+                </div>
+
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {academicYears.map((year, index) => (
+                    <motion.div
+                      key={year.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`bg-white border-2 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl transition-all ${
+                        year.isActive
+                          ? "border-green-500 bg-green-50"
+                          : "border-gray-200 hover:border-indigo-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 mb-4">
+                        <div
+                          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-lg ${
+                            year.isActive
+                              ? "bg-gradient-to-br from-green-400 to-green-600"
+                              : "bg-gradient-to-br from-indigo-400 to-indigo-600"
+                          }`}
+                        >
+                          <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 text-lg truncate">
+                            {year.year}
+                          </h4>
+                          {year.isActive && (
+                            <span className="inline-block mt-1 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm mb-4">
+                        <p className="text-gray-600">
+                          <span className="font-semibold">Start:</span>{" "}
+                          {new Date(year.startDate).toLocaleDateString("en-GB")}
+                        </p>
+                        <p className="text-gray-600">
+                          <span className="font-semibold">End:</span>{" "}
+                          {new Date(year.endDate).toLocaleDateString("en-GB")}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {!year.isActive && (
+                          <button
+                            onClick={async () => {
+                              const token = localStorage.getItem("token");
+                              try {
+                                const response = await fetch(
+                                  "/api/academic-years/activate",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${token}`,
+                                    },
+                                    body: JSON.stringify({ id: year.id }),
+                                  }
+                                );
+                                if (!response.ok)
+                                  throw new Error("Failed to activate");
+                                toast.success("Academic year activated!");
+                                fetchDashboardData(token!);
+                              } catch (error) {
+                                toast.error("Failed to activate academic year");
+                              }
+                            }}
+                            className="flex-1 bg-green-50 text-green-600 py-2 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold"
+                          >
+                            Activate
+                          </button>
+                        )}
+                        <button
+                          onClick={() => openEditModal(year, "academic-year")}
+                          className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold"
+                        >
+                          Edit
+                        </button>
+                        {!year.isActive && (
+                          <button
+                            onClick={() =>
+                              setDeleteDialog({
+                                isOpen: true,
+                                item: year,
+                                type: "academic-year",
+                              })
+                            }
+                            className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {academicYears.length === 0 && (
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg">
+                      No academic years found
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Parents Tab */}
+            {activeTab === "parents" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    Parents Management
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search parents..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => openCreateModal("parent")}
+                      className="flex items-center justify-center gap-2 bg-purple-500 text-white px-4 py-2 rounded-xl hover:bg-purple-600 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Parent</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {parents
+                    .filter((parent) =>
+                      `${parent.user.firstName} ${parent.user.lastName} ${parent.user.email}`
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase())
+                    )
+                    .map((parent, index) => (
+                      <motion.div
+                        key={parent.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl transition-all hover:border-purple-300"
+                      >
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-400 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white font-bold text-lg">
+                              {parent.user.firstName[0]}
+                              {parent.user.lastName[0]}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-900 truncate">
+                              {parent.user.firstName} {parent.user.lastName}
+                            </h4>
+                            <p className="text-sm text-gray-600">Parent</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm mb-4">
+                          <p className="text-gray-600 truncate">
+                            <span className="font-semibold">Email:</span>{" "}
+                            {parent.user.email}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="font-semibold">Phone:</span>{" "}
+                            {parent.phoneNumber || "N/A"}
+                          </p>
+                          {parent.occupation && (
+                            <p className="text-gray-600">
+                              <span className="font-semibold">Occupation:</span>{" "}
+                              {parent.occupation}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openEditModal(parent, "parent")}
+                            className="flex-1 bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() =>
+                              setDeleteDialog({
+                                isOpen: true,
+                                item: parent,
+                                type: "parent",
+                              })
+                            }
+                            className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+
+                {parents.length === 0 && (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 text-lg">No parents found</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
@@ -1138,13 +1621,10 @@ export default function AdminDashboard() {
                 required
               />
               <FormInput
-                label="Password"
-                name="password"
-                type="password"
+                label="Phone Number"
+                name="phoneNumber"
                 register={studentForm.register}
-                error={studentForm.formState.errors.password}
-                required={!editingItem}
-                placeholder={editingItem ? "Leave blank to keep current" : ""}
+                error={studentForm.formState.errors.phoneNumber}
               />
             </div>
 
@@ -1157,15 +1637,6 @@ export default function AdminDashboard() {
                 required
               />
               <FormInput
-                label="Phone Number"
-                name="phoneNumber"
-                register={studentForm.register}
-                error={studentForm.formState.errors.phoneNumber}
-              />
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <FormInput
                 label="Date of Birth"
                 name="dateOfBirth"
                 type="date"
@@ -1173,6 +1644,9 @@ export default function AdminDashboard() {
                 error={studentForm.formState.errors.dateOfBirth}
                 required
               />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
               <FormInput
                 label="Place of Birth"
                 name="placeOfBirth"
@@ -1180,9 +1654,6 @@ export default function AdminDashboard() {
                 error={studentForm.formState.errors.placeOfBirth}
                 required
               />
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
               <FormInput
                 label="Gender"
                 name="gender"
@@ -1195,34 +1666,20 @@ export default function AdminDashboard() {
                 ]}
                 required
               />
-              <FormInput
-                label="Class"
-                name="classId"
-                type="select"
-                register={studentForm.register}
-                error={studentForm.formState.errors.classId}
-                options={classes.map((cls) => ({
-                  value: cls.id.toString(),
-                  label: cls.name,
-                }))}
-                required
-              />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <FormInput
-                label="Parent Name"
-                name="parentName"
-                register={studentForm.register}
-                error={studentForm.formState.errors.parentName}
-              />
-              <FormInput
-                label="Parent Phone"
-                name="parentPhone"
-                register={studentForm.register}
-                error={studentForm.formState.errors.parentPhone}
-              />
-            </div>
+            <FormInput
+              label="Class"
+              name="classId"
+              type="select"
+              register={studentForm.register}
+              error={studentForm.formState.errors.classId}
+              options={classes.map((cls) => ({
+                value: cls.id.toString(),
+                label: cls.name,
+              }))}
+              required
+            />
 
             <FormInput
               label="Address"
@@ -1230,8 +1687,26 @@ export default function AdminDashboard() {
               type="textarea"
               register={studentForm.register}
               error={studentForm.formState.errors.address}
-              rows={3}
+              rows={2}
             />
+
+            {/* Link to Parents */}
+            <div>
+              <MultiSelect
+                label="Link to Parents (Optional)"
+                options={parents.map((parent) => ({
+                  value: parent.id.toString(),
+                  label: `${parent.user.firstName} ${parent.user.lastName} - ${parent.user.email}`,
+                }))}
+                value={selectedParents}
+                onChange={setSelectedParents}
+                placeholder="Search and select parents..."
+                isMulti={true}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Search by name or email to link this student to their parents
+              </p>
+            </div>
 
             <div className="flex gap-4 pt-4">
               <button
@@ -1284,15 +1759,32 @@ export default function AdminDashboard() {
               required
             />
 
-            <FormInput
-              label="Password"
-              name="password"
-              type="password"
-              register={teacherForm.register}
-              error={teacherForm.formState.errors.password}
-              required={!editingItem}
-              placeholder={editingItem ? "Leave blank to keep current" : ""}
-            />
+            {!editingItem && (
+              <FormInput
+                label="Password"
+                name="password"
+                type="password"
+                register={teacherForm.register}
+                error={teacherForm.formState.errors.password}
+                required
+              />
+            )}
+
+            {editingItem && (
+              <div>
+                <FormInput
+                  label="Password (Optional)"
+                  name="password"
+                  type="password"
+                  register={teacherForm.register}
+                  error={teacherForm.formState.errors.password}
+                  placeholder="Leave blank to keep current password"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Only fill this if you want to change the password
+                </p>
+              </div>
+            )}
 
             <FormInput
               label="Phone Number"
@@ -1346,15 +1838,19 @@ export default function AdminDashboard() {
 
             <FormInput
               label="Academic Year"
-              name="academicYear"
+              name="academicYearId"
+              type="select"
               register={classForm.register}
-              error={classForm.formState.errors.academicYear}
-              placeholder="e.g., 2024/2025"
+              error={classForm.formState.errors.academicYearId}
+              options={academicYears.map((year) => ({
+                value: year.id.toString(),
+                label: `${year.year} ${year.isActive ? "(Active)" : ""}`,
+              }))}
               required
             />
 
             <FormInput
-              label="Class Teacher"
+              label="Class Master"
               name="teacherId"
               type="select"
               register={classForm.register}
@@ -1452,6 +1948,211 @@ export default function AdminDashboard() {
                 className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition-colors shadow-lg"
               >
                 {editingItem ? "Update Subject" : "Create Subject"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {modalType === "parent" && (
+          <form
+            onSubmit={parentForm.handleSubmit(
+              editingItem ? handleUpdateParent : handleCreateParent
+            )}
+            className="space-y-4"
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="First Name"
+                name="firstName"
+                register={parentForm.register}
+                error={parentForm.formState.errors.firstName}
+                required
+              />
+              <FormInput
+                label="Last Name"
+                name="lastName"
+                register={parentForm.register}
+                error={parentForm.formState.errors.lastName}
+                required
+              />
+            </div>
+
+            <FormInput
+              label="Email"
+              name="email"
+              type="email"
+              register={parentForm.register}
+              error={parentForm.formState.errors.email}
+              required
+            />
+
+            {!editingItem && (
+              <FormInput
+                label="Password"
+                name="password"
+                type="password"
+                register={parentForm.register}
+                error={parentForm.formState.errors.password}
+                required
+              />
+            )}
+
+            {editingItem && (
+              <div>
+                <FormInput
+                  label="Password (Optional)"
+                  name="password"
+                  type="password"
+                  register={parentForm.register}
+                  error={parentForm.formState.errors.password}
+                  placeholder="Leave blank to keep current password"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Only fill this if you want to change the password
+                </p>
+              </div>
+            )}
+
+            <FormInput
+              label="Phone Number"
+              name="phoneNumber"
+              register={parentForm.register}
+              error={parentForm.formState.errors.phoneNumber}
+              placeholder="+237 6XX XXX XXX"
+              required
+            />
+
+            <FormInput
+              label="Occupation"
+              name="occupation"
+              register={parentForm.register}
+              error={parentForm.formState.errors.occupation}
+            />
+
+            <FormInput
+              label="Address"
+              name="address"
+              type="textarea"
+              register={parentForm.register}
+              error={parentForm.formState.errors.address}
+              rows={2}
+            />
+
+            {/* Link to Students */}
+            <div>
+              <MultiSelect
+                label="Link to Children (Optional)"
+                options={students.map((student) => ({
+                  value: student.id.toString(),
+                  label: `${student.user.firstName} ${student.user.lastName} - ${student.matricule} (${student.class.name})`,
+                }))}
+                value={selectedStudents}
+                onChange={setSelectedStudents}
+                placeholder="Search and select students..."
+                isMulti={true}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Search by name or matricule to link this parent to their
+                children
+              </p>
+            </div>
+
+            <FormInput
+              label="Relationship"
+              name="relationship"
+              type="select"
+              register={parentForm.register}
+              error={parentForm.formState.errors.relationship}
+              options={[
+                { value: "Father", label: "Father" },
+                { value: "Mother", label: "Mother" },
+                { value: "Guardian", label: "Guardian" },
+                { value: "Other", label: "Other" },
+              ]}
+            />
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-purple-500 text-white py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors shadow-lg"
+              >
+                {editingItem ? "Update Parent" : "Create Parent"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {modalType === "academic-year" && (
+          <form
+            onSubmit={academicYearForm.handleSubmit(
+              editingItem ? handleUpdateAcademicYear : handleCreateAcademicYear
+            )}
+            className="space-y-4"
+          >
+            <FormInput
+              label="Academic Year"
+              name="year"
+              register={academicYearForm.register}
+              error={academicYearForm.formState.errors.year}
+              placeholder="e.g., 2024/2025"
+              required
+            />
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Start Date"
+                name="startDate"
+                type="date"
+                register={academicYearForm.register}
+                error={academicYearForm.formState.errors.startDate}
+                required
+              />
+              <FormInput
+                label="End Date"
+                name="endDate"
+                type="date"
+                register={academicYearForm.register}
+                error={academicYearForm.formState.errors.endDate}
+                required
+              />
+            </div>
+
+            <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200">
+              <input
+                type="checkbox"
+                {...academicYearForm.register("isActive")}
+                className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+              />
+              <div>
+                <label className="font-semibold text-gray-900 cursor-pointer">
+                  Set as Active Academic Year
+                </label>
+                <p className="text-xs text-gray-600 mt-1">
+                  This will deactivate all other academic years
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-indigo-500 text-white py-3 rounded-xl font-semibold hover:bg-indigo-600 transition-colors shadow-lg"
+              >
+                {editingItem ? "Update Academic Year" : "Create Academic Year"}
               </button>
               <button
                 type="button"

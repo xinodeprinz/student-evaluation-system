@@ -1,5 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
+import Student from "./Student";
+import Subject from "./Subject";
 
 export interface GradeAttributes {
   id: number;
@@ -35,8 +37,8 @@ class Grade
   declare readonly updatedAt?: Date;
 
   // associations
-  declare student?: any;
-  declare subject?: any;
+  declare student?: Student;
+  declare subject?: Subject;
 }
 
 Grade.init(

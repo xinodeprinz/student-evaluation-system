@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Student, User, Grade, StudentParent } from "@/lib/db/models";
+import { Parent, User, StudentParent } from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
@@ -17,43 +17,47 @@ export async function PUT(
 
     const data = await request.json();
     const { id } = await params;
-    const student = await Student.findByPk(id, {
+    const parent = await Parent.findByPk(id, {
       include: [{ model: User, as: "user" }],
     });
 
-    if (!student) {
-      return NextResponse.json({ error: "Student not found" }, { status: 404 });
+    if (!parent) {
+      return NextResponse.json({ error: "Parent not found" }, { status: 404 });
     }
 
-    // Update user data (password not included since students don't login)
-    await student.user?.update({
+    const updateData: any = {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
       phoneNumber: data.phoneNumber,
-    });
+    };
 
-    // Update student data
-    await student.update({
-      matricule: data.matricule,
-      classId: data.classId,
-      dateOfBirth: data.dateOfBirth,
-      placeOfBirth: data.placeOfBirth,
-      gender: data.gender,
+    // Only update password if provided
+    if (data.password && data.password.trim() !== "") {
+      updateData.password = data.password;
+    }
+
+    // Update user data
+    await parent.user?.update(updateData);
+
+    // Update parent data
+    await parent.update({
+      phoneNumber: data.phoneNumber,
       address: data.address,
+      occupation: data.occupation,
     });
 
-    // Update parent relationships if provided
-    if (data.parentIds !== undefined) {
+    // Update student relationships if provided
+    if (data.studentIds !== undefined) {
       // Remove existing relationships
-      await StudentParent.destroy({ where: { studentId: student.id } });
+      await StudentParent.destroy({ where: { parentId: parent.id } });
 
       // Add new relationships
-      if (data.parentIds.length > 0) {
-        for (const parentId of data.parentIds) {
+      if (data.studentIds.length > 0) {
+        for (const studentId of data.studentIds) {
           await StudentParent.create({
-            studentId: student.id,
-            parentId: parseInt(parentId),
+            parentId: parent.id,
+            studentId: parseInt(studentId),
             relationship: data.relationship || "Guardian",
           });
         }
@@ -62,7 +66,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating student:", error);
+    console.error("Error updating parent:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -83,23 +87,19 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const student = await Student.findByPk(id);
+    const parent = await Parent.findByPk(id);
 
-    if (!student) {
-      return NextResponse.json({ error: "Student not found" }, { status: 404 });
+    if (!parent) {
+      return NextResponse.json({ error: "Parent not found" }, { status: 404 });
     }
 
-    // Delete all grades first
-    await Grade.destroy({ where: { studentId: student.id } });
-
-    // Delete student and user
-    const userId = student.userId;
-    await student.destroy();
+    const userId = parent.userId;
+    await parent.destroy();
     await User.destroy({ where: { id: userId } });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting student:", error);
+    console.error("Error deleting parent:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

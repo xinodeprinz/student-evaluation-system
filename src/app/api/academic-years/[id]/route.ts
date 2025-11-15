@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { User } from "@/lib/db/models";
+import { AcademicYear } from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
@@ -17,29 +17,25 @@ export async function PUT(
 
     const data = await request.json();
     const { id } = await params;
-    const teacher = await User.findByPk(id);
+    const academicYear = await AcademicYear.findByPk(id);
 
-    if (!teacher || teacher.role !== "teacher") {
-      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
+    if (!academicYear) {
+      return NextResponse.json(
+        { error: "Academic year not found" },
+        { status: 404 }
+      );
     }
 
-    const updateData: any = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phoneNumber: data.phoneNumber,
-    };
-
-    // Only update password if provided
-    if (data.password && data.password.trim() !== "") {
-      updateData.password = data.password;
+    // If setting as active, deactivate all others
+    if (data.isActive && !academicYear.isActive) {
+      await AcademicYear.update({ isActive: false }, { where: {} });
     }
 
-    await teacher.update(updateData);
+    await academicYear.update(data);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating teacher:", error);
+    console.error("Error updating academic year:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -60,16 +56,26 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const teacher = await User.findByPk(id);
+    const academicYear = await AcademicYear.findByPk(id);
 
-    if (!teacher || teacher.role !== "teacher") {
-      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
+    if (!academicYear) {
+      return NextResponse.json(
+        { error: "Academic year not found" },
+        { status: 404 }
+      );
     }
 
-    await teacher.destroy();
+    if (academicYear.isActive) {
+      return NextResponse.json(
+        { error: "Cannot delete active academic year" },
+        { status: 400 }
+      );
+    }
+
+    await academicYear.destroy();
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting teacher:", error);
+    console.error("Error deleting academic year:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

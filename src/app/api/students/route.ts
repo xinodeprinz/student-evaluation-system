@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Student, User, Class } from "@/lib/db/models";
+import {
+  Student,
+  User,
+  Class,
+  AcademicYear,
+  StudentParent,
+} from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
@@ -27,7 +33,8 @@ export async function GET(request: NextRequest) {
           {
             model: Class,
             as: "class",
-            attributes: ["name", "level", "academicYear"],
+            attributes: ["name", "level"],
+            include: [{ model: AcademicYear, as: "academicYear" }],
           },
         ],
       });
@@ -56,7 +63,8 @@ export async function GET(request: NextRequest) {
         {
           model: Class,
           as: "class",
-          attributes: ["name", "level", "academicYear"],
+          attributes: ["name", "level"],
+          include: [{ model: AcademicYear, as: "academicYear" }],
         },
       ],
       order: [["matricule", "ASC"]],
@@ -83,10 +91,28 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
+    // Get active academic year if not provided
+    let academicYearId = data.academicYearId;
+    if (!academicYearId) {
+      const activeYear = await AcademicYear.findOne({
+        where: { isActive: true },
+      });
+      if (!activeYear) {
+        return NextResponse.json(
+          { error: "No active academic year found" },
+          { status: 400 }
+        );
+      }
+      academicYearId = activeYear.id;
+    }
+
+    // Generate a random password for the student (won't be used since they don't login)
+    const randomPassword = Math.random().toString(36).slice(-8);
+
     // Create user first
     const user = await User.create({
       email: data.email,
-      password: data.password,
+      password: randomPassword, // Random password since students don't login
       firstName: data.firstName,
       lastName: data.lastName,
       role: "student",
@@ -101,10 +127,20 @@ export async function POST(request: NextRequest) {
       dateOfBirth: data.dateOfBirth,
       placeOfBirth: data.placeOfBirth,
       gender: data.gender,
-      parentName: data.parentName,
-      parentPhone: data.parentPhone,
       address: data.address,
+      academicYearId: academicYearId,
     });
+
+    // Link to parents if provided
+    if (data.parentIds && data.parentIds.length > 0) {
+      for (const parentId of data.parentIds) {
+        await StudentParent.create({
+          studentId: student.id,
+          parentId: parseInt(parentId),
+          relationship: data.relationship || "Guardian",
+        });
+      }
+    }
 
     const fullStudent = await Student.findByPk(student.id, {
       include: [

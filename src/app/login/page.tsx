@@ -49,8 +49,10 @@ export default function LoginPage() {
           router.push("/dashboard/admin");
         } else if (data.user.role === "teacher") {
           router.push("/dashboard/teacher");
+        } else if (data.user.role === "parent") {
+          router.push("/dashboard/parent");
         } else {
-          router.push("/dashboard/student");
+          router.push("/login");
         }
       }, 500);
     } catch (err: any) {
@@ -66,7 +68,7 @@ export default function LoginPage() {
       {
         admin: { email: "admin@school.cm", password: "admin123" },
         teacher: { email: "teacher@school.cm", password: "teacher123" },
-        student: { email: "student@school.cm", password: "student123" },
+        parent: { email: "parent1@school.cm", password: "parent123" },
       };
     setEmail(credentials[role].email);
     setPassword(credentials[role].password);
@@ -213,13 +215,14 @@ export default function LoginPage() {
                   <p className="text-xs opacity-90 mt-1">Grade Entry</p>
                 </button>
                 <button
-                  onClick={() => quickLogin("student")}
-                  className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 p-3 rounded-xl text-white transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  onClick={() => quickLogin("parent")}
+                  className="bg-gradient-to-br from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 p-3 rounded-xl text-white transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
-                  <p className="font-bold text-sm">Student</p>
-                  <p className="text-xs opacity-90 mt-1">View Grades</p>
+                  <p className="font-bold text-sm">Parent</p>
+                  <p className="text-xs opacity-90 mt-1">View Results</p>
                 </button>
               </div>
+
               <p className="text-xs text-gray-500 text-center mt-3">
                 Click any role to auto-fill credentials
               </p>

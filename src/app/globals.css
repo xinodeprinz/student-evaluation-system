@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+/* React Select Custom Styles */
+.react-select-container {
+  @apply w-full;
+}
+
+.react-select__control {
+  @apply transition-all duration-200;
+}
+
+.react-select__control--is-focused {
+  @apply ring-2 ring-green-200;
+}
+
+.react-select__menu {
+  @apply shadow-xl border-2 border-gray-100;
+}
+
+.react-select__option {
+  @apply cursor-pointer;
+}
+
+.react-select__multi-value {
+  @apply m-0.5;
+}
+
+.react-select__input-container {
+  @apply text-gray-900;
+}

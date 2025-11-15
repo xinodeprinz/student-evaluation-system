@@ -21,12 +21,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get("studentId");
-    const term = searchParams.get("term");
-    const sequence = searchParams.get("sequence");
+    const academicYearId = searchParams.get("academicYearId");
 
-    if (!studentId || !term || !sequence) {
+    if (!studentId) {
       return NextResponse.json(
-        { error: "studentId, term, and sequence are required" },
+        { error: "studentId is required" },
         { status: 400 }
       );
     }
@@ -34,12 +33,8 @@ export async function GET(request: NextRequest) {
     const student = await Student.findByPk(studentId, {
       include: [
         { model: User, as: "user", attributes: ["firstName", "lastName"] },
-        {
-          model: Class,
-          as: "class",
-          attributes: ["name", "level"],
-          include: [{ model: AcademicYear, as: "academicYear" }],
-        },
+        { model: Class, as: "class", attributes: ["name", "level"] },
+        { model: AcademicYear, as: "academicYear", attributes: ["year"] },
       ],
     });
 
@@ -47,12 +42,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
+    // Get all grades for the student
+    const whereClause: any = { studentId };
+
     const grades = await Grade.findAll({
-      where: {
-        studentId,
-        term,
-        sequence,
-      },
+      where: whereClause,
       include: [
         {
           model: Subject,
@@ -60,35 +54,35 @@ export async function GET(request: NextRequest) {
           attributes: ["name", "code", "coefficient"],
         },
       ],
+      order: [
+        ["term", "ASC"],
+        ["sequence", "ASC"],
+      ],
     });
 
-    const reportData = {
+    const transcriptData = {
       student: {
         firstName: student.user?.firstName,
         lastName: student.user?.lastName,
         matricule: student.matricule,
         className: student.class?.name,
+        dateOfBirth: new Date(student.dateOfBirth).toLocaleDateString("en-GB"),
+        placeOfBirth: student.placeOfBirth,
       },
-      class: {
-        name: student.class?.name,
-        level: student.class?.level,
-        academicYear: student.class?.academicYear,
-      },
-      term: parseInt(term),
-      sequence: parseInt(sequence),
-      grades: grades.map((g) => ({
+      academicYear: student.academicYear?.year,
+      allGrades: grades.map((g) => ({
+        term: g.term,
+        sequence: g.sequence,
         subject: g.subject?.name,
-        code: g.subject?.code,
         score: g.score,
         maxScore: g.maxScore,
         coefficient: g.subject?.coefficient,
-        comment: g.comment,
       })),
     };
 
-    return NextResponse.json({ report: reportData });
+    return NextResponse.json({ transcript: transcriptData });
   } catch (error) {
-    console.error("Error generating report:", error);
+    console.error("Error generating transcript:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { User } from "@/lib/db/models";
+import { Parent, User, Student, StudentParent } from "@/lib/db/models";
 import { getUserFromRequest } from "@/lib/utils/auth";
 import sequelize from "@/lib/db/config";
 
@@ -12,15 +12,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const teachers = await User.findAll({
-      where: { role: "teacher" },
-      attributes: ["id", "firstName", "lastName", "email", "phoneNumber"],
-      order: [["firstName", "ASC"]],
+    const parents = await Parent.findAll({
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["firstName", "lastName", "email", "phoneNumber"],
+        },
+      ],
+      order: [[{ model: User, as: "user" }, "firstName", "ASC"]],
     });
 
-    return NextResponse.json({ teachers });
+    return NextResponse.json({ parents });
   } catch (error) {
-    console.error("Error fetching teachers:", error);
+    console.error("Error fetching parents:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -47,29 +52,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const teacher = await User.create({
+    // Create user first
+    const user = await User.create({
       email: data.email,
       password: data.password,
       firstName: data.firstName,
       lastName: data.lastName,
-      role: "teacher",
+      role: "parent",
       phoneNumber: data.phoneNumber,
     });
 
-    return NextResponse.json(
-      {
-        teacher: {
-          id: teacher.id,
-          email: teacher.email,
-          firstName: teacher.firstName,
-          lastName: teacher.lastName,
-          phoneNumber: teacher.phoneNumber,
+    // Create parent profile
+    const parent = await Parent.create({
+      userId: user.id,
+      phoneNumber: data.phoneNumber,
+      address: data.address,
+      occupation: data.occupation,
+    });
+
+    // Link to students if provided
+    if (data.studentIds && data.studentIds.length > 0) {
+      for (const studentId of data.studentIds) {
+        await StudentParent.create({
+          parentId: parent.id,
+          studentId: parseInt(studentId),
+          relationship: data.relationship || "Guardian",
+        });
+      }
+    }
+
+    const fullParent = await Parent.findByPk(parent.id, {
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["firstName", "lastName", "email"],
         },
-      },
-      { status: 201 }
-    );
+      ],
+    });
+
+    return NextResponse.json({ parent: fullParent }, { status: 201 });
   } catch (error) {
-    console.error("Error creating teacher:", error);
+    console.error("Error creating parent:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
