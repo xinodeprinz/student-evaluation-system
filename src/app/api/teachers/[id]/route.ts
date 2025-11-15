@@ -23,12 +23,19 @@ export async function PUT(
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
     }
 
-    await teacher.update({
+    const updateData: any = {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
       phoneNumber: data.phoneNumber,
-    });
+    };
+
+    // Only update password if provided
+    if (data.password && data.password.trim() !== "") {
+      updateData.password = data.password;
+    }
+
+    await teacher.update(updateData);
 
     return NextResponse.json({ success: true });
   } catch (error) {

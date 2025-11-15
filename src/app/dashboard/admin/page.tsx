@@ -1621,13 +1621,10 @@ export default function AdminDashboard() {
                 required
               />
               <FormInput
-                label="Password"
-                name="password"
-                type="password"
+                label="Phone Number"
+                name="phoneNumber"
                 register={studentForm.register}
-                error={studentForm.formState.errors.password}
-                required={!editingItem}
-                placeholder={editingItem ? "Leave blank to keep current" : ""}
+                error={studentForm.formState.errors.phoneNumber}
               />
             </div>
 
@@ -1640,15 +1637,6 @@ export default function AdminDashboard() {
                 required
               />
               <FormInput
-                label="Phone Number"
-                name="phoneNumber"
-                register={studentForm.register}
-                error={studentForm.formState.errors.phoneNumber}
-              />
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <FormInput
                 label="Date of Birth"
                 name="dateOfBirth"
                 type="date"
@@ -1656,6 +1644,9 @@ export default function AdminDashboard() {
                 error={studentForm.formState.errors.dateOfBirth}
                 required
               />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
               <FormInput
                 label="Place of Birth"
                 name="placeOfBirth"
@@ -1663,9 +1654,6 @@ export default function AdminDashboard() {
                 error={studentForm.formState.errors.placeOfBirth}
                 required
               />
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
               <FormInput
                 label="Gender"
                 name="gender"
@@ -1678,19 +1666,20 @@ export default function AdminDashboard() {
                 ]}
                 required
               />
-              <FormInput
-                label="Class"
-                name="classId"
-                type="select"
-                register={studentForm.register}
-                error={studentForm.formState.errors.classId}
-                options={classes.map((cls) => ({
-                  value: cls.id.toString(),
-                  label: cls.name,
-                }))}
-                required
-              />
             </div>
+
+            <FormInput
+              label="Class"
+              name="classId"
+              type="select"
+              register={studentForm.register}
+              error={studentForm.formState.errors.classId}
+              options={classes.map((cls) => ({
+                value: cls.id.toString(),
+                label: cls.name,
+              }))}
+              required
+            />
 
             <FormInput
               label="Address"
@@ -1770,15 +1759,32 @@ export default function AdminDashboard() {
               required
             />
 
-            <FormInput
-              label="Password"
-              name="password"
-              type="password"
-              register={teacherForm.register}
-              error={teacherForm.formState.errors.password}
-              required={!editingItem}
-              placeholder={editingItem ? "Leave blank to keep current" : ""}
-            />
+            {!editingItem && (
+              <FormInput
+                label="Password"
+                name="password"
+                type="password"
+                register={teacherForm.register}
+                error={teacherForm.formState.errors.password}
+                required
+              />
+            )}
+
+            {editingItem && (
+              <div>
+                <FormInput
+                  label="Password (Optional)"
+                  name="password"
+                  type="password"
+                  register={teacherForm.register}
+                  error={teacherForm.formState.errors.password}
+                  placeholder="Leave blank to keep current password"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Only fill this if you want to change the password
+                </p>
+              </div>
+            )}
 
             <FormInput
               label="Phone Number"
@@ -1987,15 +1993,32 @@ export default function AdminDashboard() {
               required
             />
 
-            <FormInput
-              label="Password"
-              name="password"
-              type="password"
-              register={parentForm.register}
-              error={parentForm.formState.errors.password}
-              required={!editingItem}
-              placeholder={editingItem ? "Leave blank to keep current" : ""}
-            />
+            {!editingItem && (
+              <FormInput
+                label="Password"
+                name="password"
+                type="password"
+                register={parentForm.register}
+                error={parentForm.formState.errors.password}
+                required
+              />
+            )}
+
+            {editingItem && (
+              <div>
+                <FormInput
+                  label="Password (Optional)"
+                  name="password"
+                  type="password"
+                  register={parentForm.register}
+                  error={parentForm.formState.errors.password}
+                  placeholder="Leave blank to keep current password"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Only fill this if you want to change the password
+                </p>
+              </div>
+            )}
 
             <FormInput
               label="Phone Number"

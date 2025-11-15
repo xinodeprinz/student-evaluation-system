@@ -106,10 +106,13 @@ export async function POST(request: NextRequest) {
       academicYearId = activeYear.id;
     }
 
+    // Generate a random password for the student (won't be used since they don't login)
+    const randomPassword = Math.random().toString(36).slice(-8);
+
     // Create user first
     const user = await User.create({
       email: data.email,
-      password: data.password,
+      password: randomPassword, // Random password since students don't login
       firstName: data.firstName,
       lastName: data.lastName,
       role: "student",

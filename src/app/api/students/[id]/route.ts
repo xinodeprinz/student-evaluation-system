@@ -25,7 +25,7 @@ export async function PUT(
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
-    // Update user data
+    // Update user data (password not included since students don't login)
     await student.user?.update({
       firstName: data.firstName,
       lastName: data.lastName,

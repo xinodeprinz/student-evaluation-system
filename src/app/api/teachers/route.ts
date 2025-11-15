@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json();
 
+    // Validate password for creation
+    if (!data.password || data.password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters" },
+        { status: 400 }
+      );
+    }
+
     const teacher = await User.create({
       email: data.email,
       password: data.password,

@@ -25,13 +25,20 @@ export async function PUT(
       return NextResponse.json({ error: "Parent not found" }, { status: 404 });
     }
 
-    // Update user data
-    await parent.user?.update({
+    const updateData: any = {
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
       phoneNumber: data.phoneNumber,
-    });
+    };
+
+    // Only update password if provided
+    if (data.password && data.password.trim() !== "") {
+      updateData.password = data.password;
+    }
+
+    // Update user data
+    await parent.user?.update(updateData);
 
     // Update parent data
     await parent.update({
