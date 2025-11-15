@@ -220,7 +220,7 @@ export function generateTranscript(data: TranscriptData): jsPDF {
   // Create table for each term/sequence
   Object.keys(groupedGrades)
     .sort()
-    .forEach((key, index) => {
+    .forEach((key) => {
       const grades = groupedGrades[key];
       const term = grades[0].term;
       const sequence = grades[0].sequence;
