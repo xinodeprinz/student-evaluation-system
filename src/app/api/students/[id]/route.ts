@@ -40,8 +40,6 @@ export async function PUT(
       dateOfBirth: data.dateOfBirth,
       placeOfBirth: data.placeOfBirth,
       gender: data.gender,
-      parentName: data.parentName,
-      parentPhone: data.parentPhone,
       address: data.address,
     });
 
