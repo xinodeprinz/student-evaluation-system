@@ -1,5 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config";
+import Student from "./Student";
+import Parent from "./Parent";
 
 export interface StudentParentAttributes {
   id: number;
@@ -23,6 +25,10 @@ class StudentParent
   declare relationship: "Father" | "Mother" | "Guardian" | "Other";
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
+
+  // associations
+  declare student: Student;
+  declare parent: Parent;
 }
 
 StudentParent.init(
