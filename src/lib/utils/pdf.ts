@@ -108,7 +108,7 @@ export function generateReportCard(data: StudentReportData): jsPDF {
     (sum, g) => sum + g.maxScore * g.coefficient,
     0
   );
-  const average = ((weightedScore / weightedMaxScore) * 20).toFixed(2);
+  const average = ((weightedScore / weightedMaxScore) * 10).toFixed(2);
 
   autoTable(doc, {
     startY: yPos + 5,
@@ -120,7 +120,7 @@ export function generateReportCard(data: StudentReportData): jsPDF {
         totalCoefficient.toString(),
         totalScore.toFixed(1),
         totalMaxScore.toFixed(1),
-        `Average: ${average}/20`,
+        `Average: ${average}/10`,
       ],
     ],
     theme: "striped",
@@ -261,7 +261,7 @@ export function generateTranscript(data: TranscriptData): jsPDF {
         (sum, g) => sum + g.maxScore * g.coefficient,
         0
       );
-      const average = ((weightedScore / weightedMaxScore) * 20).toFixed(2);
+      const average = ((weightedScore / weightedMaxScore) * 10).toFixed(2);
 
       autoTable(doc, {
         startY: yPos,
@@ -273,7 +273,7 @@ export function generateTranscript(data: TranscriptData): jsPDF {
             totalCoefficient.toString(),
             totalScore.toFixed(1),
             totalMaxScore.toFixed(1),
-            `Avg: ${average}/20`,
+            `Avg: ${average}/10`,
           ],
         ],
         theme: "grid",
@@ -301,7 +301,7 @@ export function generateTranscript(data: TranscriptData): jsPDF {
     );
     const overallAverage = (
       (overallWeightedScore / overallWeightedMaxScore) *
-      20
+      10
     ).toFixed(2);
 
     if (yPos > 250) {
@@ -315,18 +315,18 @@ export function generateTranscript(data: TranscriptData): jsPDF {
     yPos += 10;
 
     doc.setFontSize(12);
-    doc.text(`Overall Average: ${overallAverage}/20`, 20, yPos);
+    doc.text(`Overall Average: ${overallAverage}/10`, 10, yPos);
 
     let grade = "F";
     const avg = parseFloat(overallAverage);
-    if (avg >= 16) grade = "A - Excellent";
-    else if (avg >= 14) grade = "B - Very Good";
-    else if (avg >= 12) grade = "C - Good";
-    else if (avg >= 10) grade = "D - Fair";
+    if (avg >= 8) grade = "A - Excellent";
+    else if (avg >= 7) grade = "B - Very Good";
+    else if (avg >= 6) grade = "C - Good";
+    else if (avg >= 5) grade = "D - Fair";
     else grade = "F - Fail";
 
     yPos += 7;
-    doc.text(`Grade: ${grade}`, 20, yPos);
+    doc.text(`Grade: ${grade}`, 10, yPos);
   }
 
   // Footer

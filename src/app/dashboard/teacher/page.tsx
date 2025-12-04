@@ -154,7 +154,7 @@ export default function TeacherDashboard() {
               term: parseInt(term),
               sequence: parseInt(sequence),
               score: gradeData.score,
-              maxScore: 20,
+              maxScore: 10,
               comment: gradeData.comment || "",
             }),
           });

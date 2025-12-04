@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     if (existingGrade) {
       await existingGrade.update({
         score: data.score,
-        maxScore: data.maxScore || 20,
+        maxScore: data.maxScore || 10,
         comment: data.comment,
       });
       grade = existingGrade;
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         term: data.term,
         sequence: data.sequence,
         score: data.score,
-        maxScore: data.maxScore || 20,
+        maxScore: data.maxScore || 10,
         comment: data.comment,
       });
     }

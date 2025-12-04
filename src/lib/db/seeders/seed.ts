@@ -330,8 +330,8 @@ async function seed() {
         subjectId: subject.id,
         term: 1,
         sequence: 1,
-        score: Math.floor(Math.random() * 6) + 14,
-        maxScore: 20,
+        score: Math.floor(Math.random() * 6) + 3,
+        maxScore: 10,
         comment: "Good performance",
       });
 
@@ -340,8 +340,8 @@ async function seed() {
         subjectId: subject.id,
         term: 1,
         sequence: 1,
-        score: Math.floor(Math.random() * 5) + 15,
-        maxScore: 20,
+        score: Math.floor(Math.random() * 5) + 6,
+        maxScore: 10,
         comment: "Excellent work",
       });
 
@@ -350,8 +350,8 @@ async function seed() {
         subjectId: subject.id,
         term: 1,
         sequence: 1,
-        score: Math.floor(Math.random() * 5) + 15,
-        maxScore: 20,
+        score: Math.floor(Math.random() * 5) + 6,
+        maxScore: 10,
         comment: "Excellent work",
       });
     }
@@ -365,8 +365,8 @@ async function seed() {
         subjectId: subject.id,
         term: 1,
         sequence: 1,
-        score: Math.floor(Math.random() * 7) + 12,
-        maxScore: 20,
+        score: Math.floor(Math.random() * 7) + 4,
+        maxScore: 10,
         comment: "Keep improving",
       });
     }

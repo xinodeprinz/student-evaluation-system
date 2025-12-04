@@ -97,7 +97,7 @@ export default function StudentDashboard() {
   const calculateAverage = () => {
     if (grades.length === 0) return 0;
     const totalWeightedScore = grades.reduce(
-      (sum, g) => sum + (g.score / g.maxScore) * 20 * g.subject.coefficient,
+      (sum, g) => sum + (g.score / g.maxScore) * 10 * g.subject.coefficient,
       0
     );
     const totalCoefficient = grades.reduce(
@@ -138,25 +138,25 @@ export default function StudentDashboard() {
   };
 
   const getGradeInfo = (score: number, maxScore: number) => {
-    const scoreOn20 = (score / maxScore) * 20;
+    const scoreOn10 = (score / maxScore) * 10;
     let color = "text-red-600 bg-red-100";
     let letter = "F";
 
-    if (scoreOn20 >= 16) {
+    if (scoreOn10 >= 8) {
       color = "text-green-600 bg-green-100";
       letter = "A";
-    } else if (scoreOn20 >= 14) {
+    } else if (scoreOn10 >= 7) {
       color = "text-blue-600 bg-blue-100";
       letter = "B";
-    } else if (scoreOn20 >= 12) {
+    } else if (scoreOn10 >= 6) {
       color = "text-yellow-600 bg-yellow-100";
       letter = "C";
-    } else if (scoreOn20 >= 10) {
+    } else if (scoreOn10 >= 5) {
       color = "text-orange-600 bg-orange-100";
       letter = "D";
     }
 
-    return { color, letter, scoreOn20: scoreOn20.toFixed(1) };
+    return { color, letter, scoreOn10: scoreOn10.toFixed(1) };
   };
 
   if (loading || !user || !studentData) {
@@ -242,7 +242,7 @@ export default function StudentDashboard() {
                   Current Average
                 </p>
                 <p className="text-4xl sm:text-5xl font-bold text-gray-900 mt-2">
-                  {average}/20
+                  {average}/10
                 </p>
                 <span
                   className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold ${avgInfo.color}`}
@@ -493,7 +493,7 @@ export default function StudentDashboard() {
                       <td colSpan={4} className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl sm:text-3xl font-bold text-green-600">
-                            {average}/20
+                            {average}/10
                           </span>
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-bold ${avgInfo.color}`}
